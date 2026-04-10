@@ -6,10 +6,25 @@ import {
 } from "../../auth/verify-container-ownership.js";
 import type { UtilisateurPublic } from "../../auth/user.types.js";
 import { forwardRequestToContainerEngine } from "../proxy/container-engine-proxy.js";
+import { proxyFluxJournauxSseAvecPropriete } from "./proxy-flux-journaux-sse.service.js";
 
 type ListeConteneursAmont = { containers: Array<{ id: string }> };
 
 type CreationConteneurAmont = { id: string; warnings?: string[] };
+
+/** Indique une requête `GET /containers/:id/logs/stream` (SSE), sans confondre avec un suffixe du type `logs/streaming`. */
+function estRequeteFluxJournauxSse(methode: string, pathname: string): boolean {
+  if (methode !== "GET") {
+    return false;
+  }
+  const segments = pathname.split("/").filter(Boolean);
+  return (
+    segments.length === 4 &&
+    segments[0] === "containers" &&
+    segments[2] === "logs" &&
+    segments[3] === "stream"
+  );
+}
 
 function reponseJsonErreur(
   code: string,
@@ -119,6 +134,18 @@ export async function proxyConteneursAvecPropriete(
       );
     }
     idConteneurPourSuppression = idParam;
+  }
+
+  if (
+    estRequeteFluxJournauxSse(methode, chemin) &&
+    idConteneurPourSuppression !== undefined
+  ) {
+    return proxyFluxJournauxSseAvecPropriete(
+      c,
+      utilisateur.id,
+      idConteneurPourSuppression,
+      depotPropriete,
+    );
   }
 
   const amont = await forwardRequestToContainerEngine(c);

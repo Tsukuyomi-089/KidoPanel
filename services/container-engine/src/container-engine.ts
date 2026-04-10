@@ -18,6 +18,12 @@ import {
   type DockerClient,
   type DockerConnectionOptions,
 } from "./docker-connection.js";
+import { wrapDockerError } from "./docker/wrap-docker-operation.js";
+import {
+  lireJournauxConteneur,
+  ouvrirFluxSuiviJournaux,
+  type FluxSuiviJournaux,
+} from "./container-engine-logs.js";
 
 /** Construit le champ Docker `ExposedPorts` à partir d’une liste de ports (`"80/tcp"`). */
 function mapExposedPorts(
@@ -98,42 +104,6 @@ function mapListItem(c: ContainerInfo): ContainerSummary {
     labels: c.Labels ?? {},
     ports,
   };
-}
-
-/** Indique si l’erreur porte un code système Node (`errno`). */
-function isErrnoException(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && "code" in err;
-}
-
-/**
- * Rejette toujours : convertit les erreurs Docker ou réseau en `ContainerEngineError` typées.
- */
-function wrapDockerError(err: unknown): never {
-  if (isErrnoException(err)) {
-    if (
-      err.code === "ECONNREFUSED" ||
-      err.code === "ENOENT" ||
-      err.code === "ENOTFOUND"
-    ) {
-      throw new ContainerEngineError(
-        "DOCKER_UNAVAILABLE",
-        "Impossible de joindre Docker Engine (vérifier DOCKER_HOST et les droits sur le socket).",
-        { cause: err },
-      );
-    }
-  }
-  if (err && typeof err === "object" && "statusCode" in err) {
-    const sc = (err as { statusCode?: number }).statusCode;
-    const msg = err instanceof Error ? err.message : String(err);
-    if (sc === 404) {
-      throw new ContainerEngineError("NOT_FOUND", msg, { cause: err });
-    }
-    if (sc === 409) {
-      throw new ContainerEngineError("CONFLICT", msg, { cause: err });
-    }
-  }
-  const msg = err instanceof Error ? err.message : String(err);
-  throw new ContainerEngineError("OPERATION_FAILED", msg, { cause: err });
 }
 
 /** Options du constructeur : client injecté ou paramètres de connexion explicites. */
@@ -286,24 +256,23 @@ export class ContainerEngine {
   }
 
   /**
-   * Retourne les journaux concaténés (stdout et stderr). Pour du flux continu, utiliser le client `raw` plus tard.
+   * Retourne les journaux concaténés (stdout et stderr) pour une réponse JSON ponctuelle.
    */
   async getLogs(
     id: string,
     options?: { tail?: number; timestamps?: boolean },
   ): Promise<string> {
-    try {
-      const container = this.docker.getContainer(id);
-      const buf = await container.logs({
-        stdout: true,
-        stderr: true,
-        timestamps: options?.timestamps,
-        tail: options?.tail,
-      });
-      return Buffer.isBuffer(buf) ? buf.toString("utf8") : String(buf);
-    } catch (e) {
-      wrapDockerError(e);
-    }
+    return lireJournauxConteneur(this.docker, id, options);
+  }
+
+  /**
+   * Ouvre un flux Docker en suivi continu (`follow`) pour exposition SSE ou proxy HTTP.
+   */
+  openLogFollowStream(
+    id: string,
+    options?: { tail?: number; timestamps?: boolean },
+  ): Promise<FluxSuiviJournaux> {
+    return ouvrirFluxSuiviJournaux(this.docker, id, options);
   }
 
   /** Accès bas niveau au client Docker pour les cas avancés. */

@@ -1,5 +1,6 @@
 import type { Context } from "hono";
 import { getContainerEngineBaseUrl } from "../../config/gateway-env.js";
+import { obtenirSignalAnnulationPourFetchAmont } from "../util/signal-annulation-requete-client.js";
 
 const EN_TETES_HOP_PAR_HOP = new Set([
   "connection",
@@ -45,10 +46,26 @@ export async function forwardRequestToContainerEngine(
     corps = await c.req.arrayBuffer();
   }
 
+  const signalAnnulation = obtenirSignalAnnulationPourFetchAmont(c);
+
   let amont: Response;
   try {
-    amont = await fetch(cible, { method: methode, headers: enTetes, body: corps });
+    amont = await fetch(cible, {
+      method: methode,
+      headers: enTetes,
+      body: corps,
+      ...(signalAnnulation ? { signal: signalAnnulation } : {}),
+    });
   } catch (erreur) {
+    if (
+      erreur instanceof Error &&
+      (erreur.name === "AbortError" ||
+        (typeof DOMException !== "undefined" &&
+          erreur instanceof DOMException &&
+          erreur.name === "AbortError"))
+    ) {
+      return new Response(null, { status: 204 });
+    }
     console.error("[gateway] Connexion au container-engine impossible :", erreur);
     return new Response(
       JSON.stringify({

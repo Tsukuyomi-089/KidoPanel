@@ -2,6 +2,7 @@ import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import viteLogo from "./assets/vite.svg";
 import heroImg from "./assets/hero.png";
+import { PanneauJournauxConteneur } from "./composants/PanneauJournauxConteneur.js";
 import "./App.css";
 
 /** Page d’accueil provisoire du panel : squelette avant branchement sur la passerelle API. */
@@ -124,6 +125,9 @@ function App() {
       </section>
 
       <div className="ticks"></div>
+
+      <PanneauJournauxConteneur />
+
       <section id="spacer"></section>
     </>
   );

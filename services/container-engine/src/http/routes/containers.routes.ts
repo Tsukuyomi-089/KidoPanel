@@ -10,12 +10,14 @@ import {
   removeContainerQuerySchema,
   stopContainerJsonSchema,
 } from "../schemas/container-api.schemas.js";
+import { mountContainerLogStreamRoute } from "./container-logs-stream.route.js";
 
 /** Enregistre les routes REST des conteneurs sur l’application Hono fournie. */
 export function mountContainerRoutes(
   app: Hono,
   engine: ContainerEngine,
 ): void {
+  mountContainerLogStreamRoute(app, engine);
   app.get(
     "/containers",
     zValidator("query", listContainersQuerySchema),

@@ -10,6 +10,7 @@ node_modules
 dist
 .turbo
 *.tsbuildinfo
+.pnpm-store
 
 #fichier de distribution
 

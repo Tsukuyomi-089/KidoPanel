@@ -23,6 +23,7 @@ export function monterRoutesProxyConteneurs(
   conteneurs.post("/:id/start", relayer);
   conteneurs.post("/:id/stop", relayer);
   conteneurs.delete("/:id", relayer);
+  conteneurs.get("/:id/logs/stream", relayer);
   conteneurs.get("/:id/logs", relayer);
 
   app.route("/containers", conteneurs);
