@@ -11,10 +11,15 @@ import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
 import { monterRoutesRacineEtSante } from "./routes/root-and-health.routes.js";
 import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
-import { requestLogMiddleware } from "./middleware/request-log.middleware.js";
+import {
+  middlewareCorrelationRequete,
+  routeMetriquesPasserelle,
+} from "./middleware/correlation-requete.middleware.js";
+import type { VariablesGateway } from "./types/gateway-variables.js";
+import { journaliserErreurPasserelle } from "../observabilite/journal-json.js";
 
-/** Assemble l’application Hono : journalisation, limitation, auth, proxy moteur cloisonné. */
-export function createGatewayApp(): Hono {
+/** Assemble l’application Hono : corrélation, limitation, auth, proxy moteur cloisonné. */
+export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   const env = loadGatewayEnv();
   const secretJwt = encoderSecretJwt(env);
   const userRepository = new UserRepository(prisma);
@@ -26,15 +31,16 @@ export function createGatewayApp(): Hono {
     coutBcrypt: env.bcryptCost,
   });
 
-  const app = new Hono();
+  const app = new Hono<{ Variables: VariablesGateway }>();
 
-  app.use("*", requestLogMiddleware);
+  app.use("*", middlewareCorrelationRequete);
   app.use(
     "*",
     creerMiddlewareRateLimit(env.rateLimitMax, env.rateLimitWindowMs),
   );
 
   monterRoutesRacineEtSante(app);
+  app.get("/metrics", routeMetriquesPasserelle);
   monterRoutesAuth(app, serviceAuth);
   monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
 
@@ -51,7 +57,11 @@ export function createGatewayApp(): Hono {
   );
 
   app.onError((erreur, c) => {
-    console.error("[gateway] Erreur non gérée :", erreur);
+    journaliserErreurPasserelle(
+      "erreur_http_non_geree",
+      erreur,
+      c.get("requestId"),
+    );
     return c.json(
       {
         error: {

@@ -5,12 +5,17 @@ import {
   corpsInscriptionSchema,
 } from "../../auth/auth.schemas.js";
 import type { ServiceAuth } from "../../auth/auth.service.js";
+import { journaliserPasserelle } from "../../observabilite/journal-json.js";
+import type { VariablesGateway } from "../types/gateway-variables.js";
 
 /**
  * Routes publiques d’inscription et de connexion ; émettent un JWT après succès.
  */
-export function monterRoutesAuth(app: Hono, serviceAuth: ServiceAuth): void {
-  const auth = new Hono();
+export function monterRoutesAuth(
+  app: Hono<{ Variables: VariablesGateway }>,
+  serviceAuth: ServiceAuth,
+): void {
+  const auth = new Hono<{ Variables: VariablesGateway }>();
 
   auth.post(
     "/register",
@@ -19,6 +24,12 @@ export function monterRoutesAuth(app: Hono, serviceAuth: ServiceAuth): void {
       const { email, password } = c.req.valid("json");
       try {
         const { jeton, utilisateur } = await serviceAuth.inscrire(email, password);
+        journaliserPasserelle({
+          niveau: "info",
+          message: "inscription_reussie",
+          requestId: c.get("requestId"),
+          metadata: { utilisateurId: utilisateur.id },
+        });
         return c.json(
           {
             token: jeton,
@@ -31,6 +42,11 @@ export function monterRoutesAuth(app: Hono, serviceAuth: ServiceAuth): void {
           erreur instanceof Error &&
           erreur.message === "EMAIL_DEJA_UTILISE"
         ) {
+          journaliserPasserelle({
+            niveau: "warn",
+            message: "inscription_refusee_email_deja_utilise",
+            requestId: c.get("requestId"),
+          });
           return c.json(
             {
               error: {
@@ -50,6 +66,12 @@ export function monterRoutesAuth(app: Hono, serviceAuth: ServiceAuth): void {
     const { email, password } = c.req.valid("json");
     try {
       const { jeton, utilisateur } = await serviceAuth.connecter(email, password);
+      journaliserPasserelle({
+        niveau: "info",
+        message: "connexion_reussie",
+        requestId: c.get("requestId"),
+        metadata: { utilisateurId: utilisateur.id },
+      });
       return c.json({
         token: jeton,
         user: { id: utilisateur.id, email: utilisateur.email },
@@ -59,6 +81,11 @@ export function monterRoutesAuth(app: Hono, serviceAuth: ServiceAuth): void {
         erreur instanceof Error &&
         erreur.message === "IDENTIFIANTS_INVALIDES"
       ) {
+        journaliserPasserelle({
+          niveau: "warn",
+          message: "connexion_refusee_identifiants_invalides",
+          requestId: c.get("requestId"),
+        });
         return c.json(
           {
             error: {

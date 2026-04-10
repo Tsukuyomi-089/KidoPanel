@@ -3,7 +3,13 @@ import { streamSSE } from "hono/streaming";
 import { zValidator } from "@hono/zod-validator";
 import { StringDecoder } from "node:string_decoder";
 import type { ContainerEngine } from "../../container-engine.js";
+import { journaliserMoteur } from "../../observabilite/journal-json.js";
+import {
+  decrementerFluxSseMoteur,
+  incrementerFluxSseMoteur,
+} from "../../observabilite/metriques-moteur.js";
 import { tryRespondWithEngineError } from "../respond-route-error.js";
+import type { VariablesMoteurHttp } from "../variables-moteur-http.js";
 import {
   containerIdParamSchema,
   containerLogsQuerySchema,
@@ -25,7 +31,7 @@ function morceauVersBuffer(m: MorceauFlux): Buffer {
  * Route SSE : relaie le flux Docker `follow` en événements `data` JSON par ligne (`{ "line": "..." }`).
  */
 export function mountContainerLogStreamRoute(
-  app: Hono,
+  app: Hono<{ Variables: VariablesMoteurHttp }>,
   engine: ContainerEngine,
 ): void {
   app.get(
@@ -41,6 +47,13 @@ export function mountContainerLogStreamRoute(
           timestamps: query.timestamps,
         });
         return streamSSE(c, async (sse) => {
+          incrementerFluxSseMoteur();
+          journaliserMoteur({
+            niveau: "info",
+            message: "flux_journaux_sse_ouvert",
+            requestId: c.get("requestId"),
+            metadata: { idConteneur: id },
+          });
           const requeteEntrante = c.req.raw;
           const fermerSurArretClient = (): void => {
             flux.fermer();
@@ -70,6 +83,21 @@ export function mountContainerLogStreamRoute(
               });
             }
           } catch (errFlux) {
+            const meta: Record<string, unknown> = { idConteneur: id };
+            if (errFlux instanceof Error) {
+              if (errFlux.message.length > 0) {
+                meta.erreurMessage = errFlux.message;
+              }
+              if (errFlux.stack !== undefined) {
+                meta.stack = errFlux.stack;
+              }
+            }
+            journaliserMoteur({
+              niveau: "error",
+              message: "flux_journaux_sse_erreur_lecture",
+              requestId: c.get("requestId"),
+              metadata: meta,
+            });
             const msg =
               errFlux instanceof Error ? errFlux.message : String(errFlux);
             await sse.writeSSE({
@@ -83,6 +111,13 @@ export function mountContainerLogStreamRoute(
               fermerSurArretClient,
             );
             flux.fermer();
+            decrementerFluxSseMoteur();
+            journaliserMoteur({
+              niveau: "info",
+              message: "flux_journaux_sse_ferme",
+              requestId: c.get("requestId"),
+              metadata: { idConteneur: id },
+            });
           }
         });
       } catch (err) {

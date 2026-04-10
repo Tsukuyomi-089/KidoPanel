@@ -1,7 +1,9 @@
 import type { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import type { ContainerEngine } from "../../container-engine.js";
+import { journaliserMoteur } from "../../observabilite/journal-json.js";
 import { tryRespondWithEngineError } from "../respond-route-error.js";
+import type { VariablesMoteurHttp } from "../variables-moteur-http.js";
 import {
   containerIdParamSchema,
   containerLogsQuerySchema,
@@ -14,7 +16,7 @@ import { mountContainerLogStreamRoute } from "./container-logs-stream.route.js";
 
 /** Enregistre les routes REST des conteneurs sur l’application Hono fournie. */
 export function mountContainerRoutes(
-  app: Hono,
+  app: Hono<{ Variables: VariablesMoteurHttp }>,
   engine: ContainerEngine,
 ): void {
   mountContainerLogStreamRoute(app, engine);
@@ -41,6 +43,12 @@ export function mountContainerRoutes(
       const spec = c.req.valid("json");
       try {
         const result = await engine.createContainer(spec);
+        journaliserMoteur({
+          niveau: "info",
+          message: "conteneur_cree",
+          requestId: c.get("requestId"),
+          metadata: { idConteneur: result.id },
+        });
         return c.json(result, 201);
       } catch (err) {
         const response = tryRespondWithEngineError(c, err);
@@ -57,6 +65,12 @@ export function mountContainerRoutes(
       const { id } = c.req.valid("param");
       try {
         await engine.startContainer(id);
+        journaliserMoteur({
+          niveau: "info",
+          message: "conteneur_demarre",
+          requestId: c.get("requestId"),
+          metadata: { idConteneur: id },
+        });
         return new Response(null, { status: 204 });
       } catch (err) {
         const response = tryRespondWithEngineError(c, err);
@@ -115,6 +129,12 @@ export function mountContainerRoutes(
     }
     try {
       await engine.stopContainer(id, timeoutSeconds);
+      journaliserMoteur({
+        niveau: "info",
+        message: "conteneur_arrete",
+        requestId: c.get("requestId"),
+        metadata: { idConteneur: id, timeoutSeconds },
+      });
       return new Response(null, { status: 204 });
     } catch (err) {
       const response = tryRespondWithEngineError(c, err);
@@ -132,6 +152,12 @@ export function mountContainerRoutes(
       const { force } = c.req.valid("query");
       try {
         await engine.removeContainer(id, { force: force ?? false });
+        journaliserMoteur({
+          niveau: "info",
+          message: "conteneur_supprime",
+          requestId: c.get("requestId"),
+          metadata: { idConteneur: id, force: force ?? false },
+        });
         return new Response(null, { status: 204 });
       } catch (err) {
         const response = tryRespondWithEngineError(c, err);

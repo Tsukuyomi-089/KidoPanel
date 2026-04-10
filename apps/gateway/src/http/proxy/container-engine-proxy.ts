@@ -1,5 +1,8 @@
 import type { Context } from "hono";
 import { getContainerEngineBaseUrl } from "../../config/gateway-env.js";
+import { journaliserErreurPasserelle } from "../../observabilite/journal-json.js";
+import { EN_TETE_ID_REQUETE_INTERNE } from "../constantes-correlation-http.js";
+import type { VariablesGateway } from "../types/gateway-variables.js";
 import { obtenirSignalAnnulationPourFetchAmont } from "../util/signal-annulation-requete-client.js";
 
 const EN_TETES_HOP_PAR_HOP = new Set([
@@ -21,7 +24,7 @@ const EN_TETES_REPONSE_A_FILTRER = new Set(["transfer-encoding", "connection"]);
  * sans aucun accès à Docker depuis la passerelle.
  */
 export async function forwardRequestToContainerEngine(
-  c: Context,
+  c: Context<{ Variables: VariablesGateway }>,
 ): Promise<Response> {
   const base = getContainerEngineBaseUrl();
   const entrant = new URL(c.req.url);
@@ -37,8 +40,14 @@ export async function forwardRequestToContainerEngine(
     if (cle === "authorization") {
       continue;
     }
+    if (cle === EN_TETE_ID_REQUETE_INTERNE.toLowerCase()) {
+      continue;
+    }
     enTetes.set(nom, valeur);
   }
+
+  const idCorrelation = c.get("requestId");
+  enTetes.set(EN_TETE_ID_REQUETE_INTERNE, idCorrelation);
 
   const methode = c.req.method;
   let corps: ArrayBuffer | undefined;
@@ -66,7 +75,11 @@ export async function forwardRequestToContainerEngine(
     ) {
       return new Response(null, { status: 204 });
     }
-    console.error("[gateway] Connexion au container-engine impossible :", erreur);
+    journaliserErreurPasserelle(
+      "proxy_container_engine_indisponible",
+      erreur,
+      idCorrelation,
+    );
     return new Response(
       JSON.stringify({
         error: {
