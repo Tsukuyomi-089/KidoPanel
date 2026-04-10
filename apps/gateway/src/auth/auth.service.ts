@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import { SignJWT } from "jose";
-import type { DepotUtilisateur } from "./user.repository.js";
+import type { UserRepository } from "./user-repository.prisma.js";
 import { versUtilisateurPublic } from "./user.repository.js";
 import type { UtilisateurPublic, UtilisateurStocke } from "./user.types.js";
 
@@ -11,7 +11,7 @@ export type ResultatAuth = {
 };
 
 type ParametresServiceAuth = {
-  depotUtilisateur: DepotUtilisateur;
+  userRepository: UserRepository;
   secretJwt: Uint8Array;
   expirationSecondes: number;
   coutBcrypt: number;
@@ -19,6 +19,20 @@ type ParametresServiceAuth = {
 
 function normaliserEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+function ligneVersStocke(ligne: {
+  id: string;
+  email: string;
+  password: string;
+  createdAt: Date;
+}): UtilisateurStocke {
+  return {
+    id: ligne.id,
+    emailNormalise: ligne.email,
+    hashMotDePasse: ligne.password,
+    creeLeIso: ligne.createdAt.toISOString(),
+  };
 }
 
 /** Orchestre inscription, vérification des identifiants et émission des JWT. */
@@ -30,20 +44,22 @@ export class ServiceAuth {
     motDePasse: string,
   ): Promise<ResultatAuth> {
     const emailNormalise = normaliserEmail(emailBrut);
-    if (this.params.depotUtilisateur.emailExiste(emailNormalise)) {
+    const existant =
+      await this.params.userRepository.findByEmail(emailNormalise);
+    if (existant) {
       throw new Error("EMAIL_DEJA_UTILISE");
     }
     const hashMotDePasse = await bcrypt.hash(
       motDePasse,
       this.params.coutBcrypt,
     );
-    const stocke: UtilisateurStocke = {
-      id: randomUUID(),
-      emailNormalise,
-      hashMotDePasse,
-      creeLeIso: new Date().toISOString(),
-    };
-    this.params.depotUtilisateur.creer(stocke);
+    const id = randomUUID();
+    const cree = await this.params.userRepository.create({
+      id,
+      email: emailNormalise,
+      password: hashMotDePasse,
+    });
+    const stocke = ligneVersStocke(cree);
     const publicU = versUtilisateurPublic(stocke);
     const jeton = await this.signerJeton(publicU);
     return { jeton, utilisateur: publicU };
@@ -54,10 +70,11 @@ export class ServiceAuth {
     motDePasse: string,
   ): Promise<ResultatAuth> {
     const emailNormalise = normaliserEmail(emailBrut);
-    const stocke = this.params.depotUtilisateur.trouverParEmail(emailNormalise);
-    if (!stocke) {
+    const ligne = await this.params.userRepository.findByEmail(emailNormalise);
+    if (!ligne) {
       throw new Error("IDENTIFIANTS_INVALIDES");
     }
+    const stocke = ligneVersStocke(ligne);
     const ok = await bcrypt.compare(motDePasse, stocke.hashMotDePasse);
     if (!ok) {
       throw new Error("IDENTIFIANTS_INVALIDES");

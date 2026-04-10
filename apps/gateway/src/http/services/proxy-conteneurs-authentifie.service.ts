@@ -1,5 +1,6 @@
 import type { Context } from "hono";
-import type { DepotProprieteConteneur } from "../../auth/container-ownership.repository.js";
+import type { ContainerOwnershipRepository } from "../../auth/container-ownership-repository.prisma.js";
+import { estConteneurPossede } from "../../auth/docker-identifiant-conteneur.js";
 import type { UtilisateurPublic } from "../../auth/user.types.js";
 import { forwardRequestToContainerEngine } from "../proxy/container-engine-proxy.js";
 
@@ -30,7 +31,7 @@ function estRouteRacineConteneurs(pathname: string): boolean {
 export async function proxyConteneursAvecPropriete(
   c: Context,
   utilisateur: UtilisateurPublic,
-  depotPropriete: DepotProprieteConteneur,
+  depotPropriete: ContainerOwnershipRepository,
 ): Promise<Response> {
   const methode = c.req.method;
   const chemin = new URL(c.req.url).pathname;
@@ -53,8 +54,10 @@ export async function proxyConteneursAvecPropriete(
         );
       }
       const liste = Array.isArray(parse.containers) ? parse.containers : [];
+      const idsPossedes =
+        await depotPropriete.getContainerIdsByUser(utilisateur.id);
       const filtrees = liste.filter((cont) =>
-        depotPropriete.estProprietaire(utilisateur.id, cont.id),
+        estConteneurPossede(idsPossedes, cont.id),
       );
       return new Response(JSON.stringify({ containers: filtrees }), {
         status: amont.status,
@@ -75,7 +78,7 @@ export async function proxyConteneursAvecPropriete(
           });
         }
         if (typeof parse.id === "string" && parse.id.length > 0) {
-          depotPropriete.enregistrer(utilisateur.id, parse.id);
+          await depotPropriete.addOwnership(utilisateur.id, parse.id);
         }
         return new Response(JSON.stringify(parse), {
           status: amont.status,
@@ -90,12 +93,16 @@ export async function proxyConteneursAvecPropriete(
   }
 
   const idParam = c.req.param("id");
-  if (idParam && !depotPropriete.estProprietaire(utilisateur.id, idParam)) {
-    return reponseJsonErreur(
-      "CONTAINER_ACCESS_DENIED",
-      "Ce conteneur n’existe pas pour votre compte ou ne vous appartient pas.",
-      403,
-    );
+  if (idParam) {
+    const idsPossedes =
+      await depotPropriete.getContainerIdsByUser(utilisateur.id);
+    if (!estConteneurPossede(idsPossedes, idParam)) {
+      return reponseJsonErreur(
+        "CONTAINER_ACCESS_DENIED",
+        "Ce conteneur n’existe pas pour votre compte ou ne vous appartient pas.",
+        403,
+      );
+    }
   }
 
   const amont = await forwardRequestToContainerEngine(c);
@@ -106,7 +113,7 @@ export async function proxyConteneursAvecPropriete(
     amont.status < 300 &&
     idParam
   ) {
-    depotPropriete.retirerPourIdentifiant(idParam);
+    await depotPropriete.removeOwnership(idParam);
   }
 
   return amont;

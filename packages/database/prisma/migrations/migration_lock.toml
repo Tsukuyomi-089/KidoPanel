@@ -1,0 +1,2 @@
+# Ne pas modifier ce fichier à la main ; il est géré par Prisma.
+provider = "postgresql"

@@ -1,6 +1,6 @@
 /**
  * Lecture centralisée des variables d’environnement de la passerelle
- * (URL du container-engine, limitation de débit, secrets JWT et coût bcrypt).
+ * (URL du container-engine, limitation de débit, secrets JWT, coût bcrypt, base PostgreSQL).
  */
 export type GatewayEnv = {
   rateLimitMax: number;
@@ -11,6 +11,8 @@ export type GatewayEnv = {
   jwtExpiresSeconds: number;
   /** Coût bcrypt (facteur de travail) pour le hachage des mots de passe. */
   bcryptCost: number;
+  /** Chaîne de connexion Prisma vers PostgreSQL (utilisateurs et propriétés de conteneurs). */
+  databaseUrl: string;
 };
 
 /** Retourne l’URL de base du container-engine, sans barre oblique finale. */
@@ -28,7 +30,7 @@ export function encoderSecretJwt(env: GatewayEnv): Uint8Array {
 
 /**
  * Construit la configuration complète à partir des variables d’environnement.
- * Sans `GATEWAY_JWT_SECRET`, la passerelle ne peut pas émettre ni valider les jetons : démarrage refusé.
+ * Sans `GATEWAY_JWT_SECRET` ou `DATABASE_URL`, la passerelle refuse le démarrage avec un message explicite.
  */
 export function loadGatewayEnv(): GatewayEnv {
   const max = Number(process.env.GATEWAY_RATE_LIMIT_MAX ?? "120");
@@ -37,6 +39,12 @@ export function loadGatewayEnv(): GatewayEnv {
   if (!jwtSecretBrut) {
     throw new Error(
       "Variable GATEWAY_JWT_SECRET manquante ou vide : obligatoire pour l’authentification.",
+    );
+  }
+  const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
+  if (!databaseUrl) {
+    throw new Error(
+      "Variable DATABASE_URL manquante ou vide : obligatoire pour la persistance PostgreSQL.",
     );
   }
   const exp = Number(process.env.GATEWAY_JWT_EXPIRES_SECONDS ?? "86400");
@@ -51,5 +59,6 @@ export function loadGatewayEnv(): GatewayEnv {
       Number.isFinite(bcryptCost) && bcryptCost >= 4 && bcryptCost <= 15
         ? bcryptCost
         : 12,
+    databaseUrl,
   };
 }

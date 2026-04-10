@@ -1,0 +1,30 @@
+{
+  "name": "@kydopanel/database",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Client Prisma partagé et schéma PostgreSQL pour KydoPanel",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "prisma generate && tsc",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "lint": "node -e \"\"",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "prisma": "^6.19.0",
+    "typescript": "^6.0.2"
+  }
+}

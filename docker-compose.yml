@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kydopanel-postgres
+    environment:
+      POSTGRES_USER: kydopanel
+      POSTGRES_PASSWORD: kydopanel
+      POSTGRES_DB: kydopanel
+    ports:
+      - "5432:5432"
+    volumes:
+      - kydopanel_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kydopanel -d kydopanel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kydopanel_pg_data:

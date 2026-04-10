@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import type { DepotProprieteConteneur } from "../../auth/container-ownership.repository.js";
+import type { ContainerOwnershipRepository } from "../../auth/container-ownership-repository.prisma.js";
 import { creerMiddlewareAuthObligatoire } from "../../auth/auth.middleware.js";
 import type { VariablesPasserelle } from "../types/gateway-variables.js";
 import { proxyConteneursAvecPropriete } from "../services/proxy-conteneurs-authentifie.service.js";
@@ -10,7 +10,7 @@ import { proxyConteneursAvecPropriete } from "../services/proxy-conteneurs-authe
 export function monterRoutesProxyConteneurs(
   app: Hono,
   secretJwt: Uint8Array,
-  depotPropriete: DepotProprieteConteneur,
+  depotPropriete: ContainerOwnershipRepository,
 ): void {
   const conteneurs = new Hono<{ Variables: VariablesPasserelle }>();
   conteneurs.use("*", creerMiddlewareAuthObligatoire(secretJwt));

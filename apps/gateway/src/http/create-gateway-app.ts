@@ -1,7 +1,8 @@
 import { Hono } from "hono";
+import { prisma } from "@kydopanel/database";
 import { ServiceAuth } from "../auth/auth.service.js";
-import { DepotProprieteConteneurMemoire } from "../auth/container-ownership.repository.memory.js";
-import { DepotUtilisateurMemoire } from "../auth/user.repository.memory.js";
+import { ContainerOwnershipRepository } from "../auth/container-ownership-repository.prisma.js";
+import { UserRepository } from "../auth/user-repository.prisma.js";
 import {
   encoderSecretJwt,
   loadGatewayEnv,
@@ -16,10 +17,10 @@ import { requestLogMiddleware } from "./middleware/request-log.middleware.js";
 export function createGatewayApp(): Hono {
   const env = loadGatewayEnv();
   const secretJwt = encoderSecretJwt(env);
-  const depotUtilisateur = new DepotUtilisateurMemoire();
-  const depotPropriete = new DepotProprieteConteneurMemoire();
+  const userRepository = new UserRepository(prisma);
+  const depotPropriete = new ContainerOwnershipRepository(prisma);
   const serviceAuth = new ServiceAuth({
-    depotUtilisateur,
+    userRepository,
     secretJwt,
     expirationSecondes: env.jwtExpiresSeconds,
     coutBcrypt: env.bcryptCost,
