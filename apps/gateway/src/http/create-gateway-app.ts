@@ -1,14 +1,30 @@
 import { Hono } from "hono";
-import { loadGatewayEnv } from "../config/gateway-env.js";
-import { jwtAuthReadyMiddleware } from "./middleware/jwt-auth.middleware.js";
-import { requestLogMiddleware } from "./middleware/request-log.middleware.js";
-import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
+import { ServiceAuth } from "../auth/auth.service.js";
+import { DepotProprieteConteneurMemoire } from "../auth/container-ownership.repository.memory.js";
+import { DepotUtilisateurMemoire } from "../auth/user.repository.memory.js";
+import {
+  encoderSecretJwt,
+  loadGatewayEnv,
+} from "../config/gateway-env.js";
+import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
 import { monterRoutesRacineEtSante } from "./routes/root-and-health.routes.js";
+import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
+import { requestLogMiddleware } from "./middleware/request-log.middleware.js";
 
-/** Assemble l’application Hono : journalisation, limitation, JWT optionnel, proxy moteur. */
+/** Assemble l’application Hono : journalisation, limitation, auth, proxy moteur cloisonné. */
 export function createGatewayApp(): Hono {
   const env = loadGatewayEnv();
+  const secretJwt = encoderSecretJwt(env);
+  const depotUtilisateur = new DepotUtilisateurMemoire();
+  const depotPropriete = new DepotProprieteConteneurMemoire();
+  const serviceAuth = new ServiceAuth({
+    depotUtilisateur,
+    secretJwt,
+    expirationSecondes: env.jwtExpiresSeconds,
+    coutBcrypt: env.bcryptCost,
+  });
+
   const app = new Hono();
 
   app.use("*", requestLogMiddleware);
@@ -16,10 +32,10 @@ export function createGatewayApp(): Hono {
     "*",
     creerMiddlewareRateLimit(env.rateLimitMax, env.rateLimitWindowMs),
   );
-  app.use("*", jwtAuthReadyMiddleware);
 
   monterRoutesRacineEtSante(app);
-  monterRoutesProxyConteneurs(app);
+  monterRoutesAuth(app, serviceAuth);
+  monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
 
   app.notFound((c) =>
     c.json(

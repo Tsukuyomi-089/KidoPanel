@@ -28,9 +28,15 @@ export async function forwardRequestToContainerEngine(
 
   const enTetes = new Headers();
   for (const [nom, valeur] of c.req.raw.headers) {
-    if (!EN_TETES_HOP_PAR_HOP.has(nom.toLowerCase())) {
-      enTetes.set(nom, valeur);
+    const cle = nom.toLowerCase();
+    if (EN_TETES_HOP_PAR_HOP.has(cle)) {
+      continue;
     }
+    // Le moteur de conteneurs ne valide pas le JWT de la passerelle : on évite de lui transmettre le secret utilisateur.
+    if (cle === "authorization") {
+      continue;
+    }
+    enTetes.set(nom, valeur);
   }
 
   const methode = c.req.method;

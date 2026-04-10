@@ -9,17 +9,28 @@ if (!Number.isFinite(port) || port < 1 || port > 65_535) {
   );
   process.exitCode = 1;
 } else {
-  const app = createGatewayApp();
+  let app;
+  try {
+    app = createGatewayApp();
+  } catch (erreur) {
+    console.error(
+      "[gateway] Impossible de démarrer (configuration ou secrets) :",
+      erreur,
+    );
+    process.exitCode = 1;
+  }
 
-  serve(
-    {
-      fetch: app.fetch,
-      port,
-    },
-    (info) => {
-      console.log(
-        `[gateway] API à l’écoute sur le port ${String(info.port)} (relai vers container-engine).`,
-      );
-    },
-  );
+  if (app) {
+    serve(
+      {
+        fetch: app.fetch,
+        port,
+      },
+      (info) => {
+        console.log(
+          `[gateway] API à l’écoute sur le port ${String(info.port)} (relai vers container-engine).`,
+        );
+      },
+    );
+  }
 }
