@@ -233,11 +233,10 @@ export function InterfaceTestPasserelle() {
     <main style={{ padding: "1rem", fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ fontSize: "1.25rem" }}>KidoPanel — test passerelle</h1>
       <p style={{ fontSize: "0.9rem", opacity: 0.85 }}>
-        Passerelle : <code>{urlBasePasserelle()}</code> — si l’URL du panel n’est pas{" "}
-        <code>localhost</code> / <code>127.0.0.1</code>, c’est toujours le{" "}
-        même hôte que la barre d’adresse sur le port 3000. En local uniquement :{" "}
-        <code>VITE_GATEWAY_BASE_URL</code> ou proxy <code>VITE_GATEWAY_DEV_USE_PROXY=1</code> (voir{" "}
-        <code>apps/web/.env.example</code>).
+        Passerelle : <code>{urlBasePasserelle()}</code> — en <code>pnpm dev</code>, hôte distant (IP / domaine)
+        : proxy Vite par défaut (pas d’exposition du 3000). Preview / prod ou{" "}
+        <code>VITE_GATEWAY_DEV_USE_PROXY=0</code> : <code>http(s)://</code> même hôte, port 3000. Voir{" "}
+        <code>apps/web/.env.example</code>.
       </p>
 
       <div

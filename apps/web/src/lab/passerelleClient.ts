@@ -47,17 +47,34 @@ function urlPasserelleHorsEnvSurMemeHoteQueLaPage(): string {
 }
 
 /**
- * En dev sans `VITE_GATEWAY_BASE_URL` : URL directe même hôte:3000 (navigateur → passerelle),
- * sauf si `VITE_GATEWAY_DEV_USE_PROXY=1` (relais Vite vers 127.0.0.1:3000, port 3000 non requis côté WAN).
+ * Relais Vite vers la passerelle (127.0.0.1:3000 côté serveur) : explicite via
+ * `VITE_GATEWAY_DEV_USE_PROXY`, ou automatique en dev si la page n’est pas en loopback
+ * (évite d’exposer le port 3000 sur Internet pour `pnpm dev` distant).
+ */
+function devPasserelleUtiliseProxyVite(): boolean {
+  const v = import.meta.env.VITE_GATEWAY_DEV_USE_PROXY?.trim().toLowerCase();
+  if (v === "0" || v === "false" || v === "no" || v === "off") {
+    return false;
+  }
+  if (v === "1" || v === "true" || v === "yes" || v === "on") {
+    return true;
+  }
+  if (!import.meta.env.DEV || typeof window === "undefined") {
+    return false;
+  }
+  const h = window.location.hostname;
+  return h !== "" && !hoteEstLoopback(h);
+}
+
+/**
+ * En dev sans `VITE_GATEWAY_BASE_URL` : proxy Vite si activé ou hôte distant,
+ * sinon URL directe (loopback ou même hôte:3000).
  */
 function urlPasserelleDevSansVariableExplicite(): string {
   if (typeof window === "undefined") {
     return "http://127.0.0.1:3000";
   }
-  const proxyActif =
-    import.meta.env.VITE_GATEWAY_DEV_USE_PROXY === "1" ||
-    import.meta.env.VITE_GATEWAY_DEV_USE_PROXY === "true";
-  if (proxyActif) {
+  if (devPasserelleUtiliseProxyVite()) {
     return `${window.location.origin}${CHEMIN_PROXY_PASSERELLE_DEV}`;
   }
   return urlPasserelleHorsEnvSurMemeHoteQueLaPage();
@@ -65,9 +82,10 @@ function urlPasserelleDevSansVariableExplicite(): string {
 
 /**
  * Base des appels à la passerelle.
- * Si le panel est ouvert avec une adresse non-loopback (ex. `http://IP:5173`), l’API est
- * toujours `http(s)://<même IP ou nom>:3000` — jamais `127.0.0.1` depuis le navigateur distant.
- * En local (`localhost` / `127.0.0.1`), on utilise `VITE_GATEWAY_BASE_URL` ou le proxy dev ou 127.0.0.1:3000.
+ * Si le panel est ouvert avec une adresse non-loopback (ex. `http://IP:5173`), en **build de dev**
+ * on utilise par défaut le proxy Vite (`/__kidopanel_gateway`) pour joindre la passerelle sur le serveur,
+ * sans ouvrir le port 3000 au WAN. En **preview / prod**, ou si `VITE_GATEWAY_DEV_USE_PROXY=0`, l’API est
+ * `http(s)://<même hôte>:3000` (ou `VITE_GATEWAY_BASE_URL`). En local : proxy explicite, variable d’env, ou 127.0.0.1:3000.
  */
 export function urlBasePasserelle(): string {
   if (typeof window !== "undefined") {
@@ -82,6 +100,9 @@ export function urlBasePasserelle(): string {
       }
       if (depuisEnvHorsLocal !== null) {
         return depuisEnvHorsLocal;
+      }
+      if (import.meta.env.DEV && devPasserelleUtiliseProxyVite()) {
+        return `${window.location.origin}${CHEMIN_PROXY_PASSERELLE_DEV}`;
       }
       const scheme = window.location.protocol === "https:" ? "https" : "http";
       return `${scheme}://${h}:3000`;

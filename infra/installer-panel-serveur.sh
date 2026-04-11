@@ -234,13 +234,13 @@ preparer_env_web() {
   fi
   if [[ -f "$RACINE_DEPOT/apps/web/.env.example" ]]; then
     cp "$RACINE_DEPOT/apps/web/.env.example" "$RACINE_DEPOT/apps/web/.env"
-    echo "Créé apps/web/.env depuis .env.example (VITE_GATEWAY_BASE_URL commenté : en dev, même hôte que la page, port 3000)."
+    echo "Créé apps/web/.env depuis .env.example (dev distant : proxy Vite par défaut vers la passerelle locale)."
   else
     printf '%s\n' \
       "# Optionnel : en pnpm dev sans ligne active, le front utilise http(s)://<hôte de la page>:3000." \
       "# VITE_GATEWAY_BASE_URL=http://127.0.0.1:3000" \
       >"$RACINE_DEPOT/apps/web/.env"
-    echo "Créé apps/web/.env minimal (passerelle dev = hôte de la page :3000 si variable absente)."
+    echo "Créé apps/web/.env minimal (dev distant : proxy Vite par défaut si variable absente)."
   fi
 }
 
