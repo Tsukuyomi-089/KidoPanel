@@ -1,3 +1,6 @@
+# Version explicite pour rester compatible avec l’exécutable « docker-compose » 1.x (VPS sans plugin Compose V2).
+version: "3.8"
+
 services:
   postgres:
     image: postgres:16-alpine
