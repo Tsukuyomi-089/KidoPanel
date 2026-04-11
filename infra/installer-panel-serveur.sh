@@ -332,6 +332,18 @@ arreter_panel() {
   reinitialiser_processus_panel
 }
 
+# Compile le package Prisma partagé, la passerelle et le moteur : `pnpm … start` exige `dist/main.js` ;
+# un redémarrage sans build complet laissait la passerelle absente ou obsolète.
+compiler_passerelle_et_moteur_avant_demarrage() {
+  echo "Compilation (database → passerelle → moteur)…"
+  cd "$RACINE_DEPOT"
+  charger_env_pour_prisma
+  pnpm --filter @kidopanel/database run build
+  pnpm --filter gateway run build
+  pnpm --filter container-engine run build
+  echo "Compilation passerelle / moteur terminée."
+}
+
 # Attend que la passerelle réponde sur 127.0.0.1:3000 avant de lancer Vite (le proxy dev pointe vers cette adresse).
 attendre_passerelle_proxy() {
   local max=60
@@ -352,6 +364,7 @@ demarrer_panel() {
   cd "$RACINE_DEPOT"
   echo "Préparation : arrêt des anciens processus et libération des ports 5173–5175, 3000, 8787…"
   reinitialiser_processus_panel
+  compiler_passerelle_et_moteur_avant_demarrage
   echo "Démarrage du panel en arrière-plan (journaux : ${LOG_DIR}/)…"
 
   nohup bash -c "cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter container-engine start" \
