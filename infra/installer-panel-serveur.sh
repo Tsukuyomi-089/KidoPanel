@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 # Installe les dépendances et prépare l’environnement pour exécuter KidoPanel sur une machine
 # (Node, pnpm, PostgreSQL via Docker Compose, migrations Prisma, build monorepo).
+# Tente d’installer Docker Compose V2 s’il manque (paquets ou binaire officiel).
 # Ne démarre pas les services applicatifs : voir les instructions affichées en fin de script.
 
 set -euo pipefail
 
 RACINE_DEPOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$RACINE_DEPOT"
+
+# Version du binaire Compose (repli si les paquets système échouent).
+VERSION_COMPOSE_BINAIRE="v2.32.2"
 
 echo_err() {
   echo "$*" >&2
@@ -29,6 +33,7 @@ while [[ $# -gt 0 ]]; do
       echo "Usage : $0 [options]"
       echo "  --verifier             Vérifie uniquement les prérequis (Node, Docker, pnpm)."
       echo "  --sans-postgres-docker N’exécute pas « docker compose » (PostgreSQL déjà joignable via DATABASE_URL)."
+      echo "Variable d’environnement : PANEL_INSTALLER_SANS_AUTO=1 désactive l’installation automatique de Compose."
       exit 0
       ;;
     *)
@@ -37,6 +42,154 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+# Commande Compose effective : tableau (« docker » « compose ») ou (« docker-compose »).
+DOCKER_COMPOSE=()
+
+definir_commande_compose_si_disponible() {
+  DOCKER_COMPOSE=()
+  if docker compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE=(docker compose)
+    return 0
+  fi
+  if command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
+    DOCKER_COMPOSE=(docker-compose)
+    return 0
+  fi
+  return 1
+}
+
+executer_avec_privileges() {
+  if [[ "$(id -u)" -eq 0 ]]; then
+    "$@"
+  elif command -v sudo >/dev/null 2>&1; then
+    sudo "$@"
+  else
+    return 1
+  fi
+}
+
+architecture_compose_github() {
+  case "$(uname -m)" in
+    x86_64 | amd64)
+      echo "x86_64"
+      ;;
+    aarch64 | arm64)
+      echo "aarch64"
+      ;;
+    armv7l)
+      echo "armv7"
+      ;;
+    *)
+      echo ""
+      ;;
+  esac
+}
+
+installer_compose_via_paquets() {
+  if [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]]; then
+    return 1
+  fi
+  echo "Tentative d’installation du plugin Docker Compose via le gestionnaire de paquets…"
+  if command -v apt-get >/dev/null 2>&1; then
+    if executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get update -qq &&
+      executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin; then
+      return 0
+    fi
+  fi
+  if command -v dnf >/dev/null 2>&1; then
+    if executer_avec_privileges dnf install -y docker-compose-plugin 2>/dev/null; then
+      return 0
+    fi
+  fi
+  if command -v yum >/dev/null 2>&1; then
+    if executer_avec_privileges yum install -y docker-compose-plugin 2>/dev/null; then
+      return 0
+    fi
+  fi
+  if command -v zypper >/dev/null 2>&1; then
+    if executer_avec_privileges zypper install -y docker-compose-plugin 2>/dev/null; then
+      return 0
+    fi
+  fi
+  if command -v apk >/dev/null 2>&1; then
+    if executer_avec_privileges apk add --no-cache docker-cli-compose 2>/dev/null; then
+      return 0
+    fi
+  fi
+  return 1
+}
+
+installer_compose_via_binaire_officiel() {
+  if [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]]; then
+    return 1
+  fi
+  local arch url dest dir_plugin
+  arch="$(architecture_compose_github)"
+  if [[ -z "$arch" ]]; then
+    echo_err "Architecture $(uname -m) non prise en charge pour le binaire Compose."
+    return 1
+  fi
+  url="https://github.com/docker/compose/releases/download/${VERSION_COMPOSE_BINAIRE}/docker-compose-linux-${arch}"
+  echo "Téléchargement de Docker Compose ${VERSION_COMPOSE_BINAIRE} depuis GitHub…"
+
+  if [[ "$(id -u)" -eq 0 ]]; then
+    dir_plugin="/usr/local/lib/docker/cli-plugins"
+    executer_avec_privileges mkdir -p "$dir_plugin"
+    dest="${dir_plugin}/docker-compose"
+    if command -v curl >/dev/null 2>&1; then
+      curl -fsSL "$url" -o "$dest"
+    elif command -v wget >/dev/null 2>&1; then
+      wget -qO "$dest" "$url"
+    else
+      echo_err "Installez « curl » ou « wget » pour le téléchargement de Compose."
+      return 1
+    fi
+    chmod +x "$dest"
+    return 0
+  fi
+
+  dir_plugin="${HOME}/.docker/cli-plugins"
+  mkdir -p "$dir_plugin"
+  dest="${dir_plugin}/docker-compose"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$url" -o "$dest"
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO "$dest" "$url"
+  else
+    echo_err "Installez « curl » ou « wget », ou relancez le script en root pour une installation système."
+    return 1
+  fi
+  chmod +x "$dest"
+  return 0
+}
+
+assurer_docker_compose() {
+  if definir_commande_compose_si_disponible; then
+    echo "Prérequis OK : Compose disponible (« ${DOCKER_COMPOSE[*]} »)"
+    return 0
+  fi
+  if [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]]; then
+    echo_err "« docker compose » indisponible et installation automatique désactivée (PANEL_INSTALLER_SANS_AUTO=1)."
+    return 1
+  fi
+  echo "« docker compose » absent : installation automatique…"
+  installer_compose_via_paquets || true
+  if definir_commande_compose_si_disponible; then
+    echo "Prérequis OK : Docker Compose installé via paquets (« ${DOCKER_COMPOSE[*]} »)"
+    return 0
+  fi
+  if installer_compose_via_binaire_officiel; then
+    if definir_commande_compose_si_disponible; then
+      echo "Prérequis OK : Docker Compose installé (binaire plugin « ${DOCKER_COMPOSE[*]} »)"
+      return 0
+    fi
+  fi
+  echo_err "Impossible d’installer Docker Compose automatiquement."
+  echo_err "Installez le paquet « docker-compose-plugin » (Debian/Ubuntu : apt install docker-compose-plugin) ou consultez :"
+  echo_err "https://docs.docker.com/compose/install/linux/"
+  return 1
+}
 
 verifier_version_node() {
   if ! command -v node >/dev/null 2>&1; then
@@ -64,12 +217,12 @@ verifier_docker() {
   echo "Prérequis OK : Docker joignable"
 }
 
-verifier_compose() {
-  if docker compose version >/dev/null 2>&1; then
-    echo "Prérequis OK : « docker compose » disponible"
+verifier_compose_uniquement() {
+  if definir_commande_compose_si_disponible; then
+    echo "Prérequis OK : « ${DOCKER_COMPOSE[*]} » disponible"
     return 0
   fi
-  echo_err "« docker compose » indisponible : installez Docker Compose V2 (plugin « compose »)."
+  echo_err "« docker compose » indisponible : installez Docker Compose V2 ou relancez le script sans --verifier pour installation auto."
   return 1
 }
 
@@ -125,12 +278,12 @@ preparer_env_web() {
 
 demarrer_postgres_et_attendre() {
   verifier_docker
-  verifier_compose
-  docker compose -f "$RACINE_DEPOT/docker-compose.yml" up -d
+  assurer_docker_compose
+  "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" up -d
   echo "Attente de la disponibilité de PostgreSQL…"
   local tentatives=0
   while [[ $tentatives -lt 60 ]]; do
-    if docker compose -f "$RACINE_DEPOT/docker-compose.yml" exec -T postgres \
+    if "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" exec -T postgres \
       pg_isready -U kydopanel -d kydopanel >/dev/null 2>&1; then
       echo "PostgreSQL prêt."
       return 0
@@ -138,7 +291,7 @@ demarrer_postgres_et_attendre() {
     tentatives=$((tentatives + 1))
     sleep 1
   done
-  echo_err "PostgreSQL n’est pas devenu joignable à temps (vérifiez « docker compose logs postgres »)."
+  echo_err "PostgreSQL n’est pas devenu joignable à temps (vérifiez « ${DOCKER_COMPOSE[*]} logs postgres »)."
   return 1
 }
 
@@ -152,7 +305,7 @@ charger_env_pour_prisma() {
 if [[ "$MODE_VERIFIER_SEULEMENT" -eq 1 ]]; then
   verifier_version_node
   verifier_docker
-  verifier_compose
+  verifier_compose_uniquement
   activer_pnpm
   echo "Toutes les vérifications demandées ont réussi."
   exit 0
