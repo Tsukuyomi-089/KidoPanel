@@ -10,7 +10,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "dev": "tsc --watch",
+    "dev": "tsc && (tsc --watch --preserveWatchOutput & node --watch dist/main.js)",
     "start": "node dist/main.js",
     "test": "vitest run",
     "test:watch": "vitest",

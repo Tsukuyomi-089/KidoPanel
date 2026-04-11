@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "dev": "tsc --watch",
+    "dev": "tsc && (tsc --watch --preserveWatchOutput & node --watch dist/main.js)",
     "lint": "node -e \"\"",
     "start": "node dist/main.js"
   },
