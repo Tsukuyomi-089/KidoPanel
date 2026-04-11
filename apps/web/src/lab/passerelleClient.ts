@@ -64,9 +64,30 @@ function urlPasserelleDevSansVariableExplicite(): string {
 }
 
 /**
- * Base des appels à la passerelle : en prod ou build, variable d’environnement ou même hôte :3000.
+ * Base des appels à la passerelle.
+ * Si le panel est ouvert avec une adresse non-loopback (ex. `http://IP:5173`), l’API est
+ * toujours `http(s)://<même IP ou nom>:3000` — jamais `127.0.0.1` depuis le navigateur distant.
+ * En local (`localhost` / `127.0.0.1`), on utilise `VITE_GATEWAY_BASE_URL` ou le proxy dev ou 127.0.0.1:3000.
  */
 export function urlBasePasserelle(): string {
+  if (typeof window !== "undefined") {
+    const h = window.location.hostname;
+    if (h !== "" && !hoteEstLoopback(h)) {
+      let depuisEnvHorsLocal = urlDepuisVariableEnv();
+      if (
+        depuisEnvHorsLocal !== null &&
+        envLoopbackIncompatibleAvecPage(depuisEnvHorsLocal)
+      ) {
+        depuisEnvHorsLocal = null;
+      }
+      if (depuisEnvHorsLocal !== null) {
+        return depuisEnvHorsLocal;
+      }
+      const scheme = window.location.protocol === "https:" ? "https" : "http";
+      return `${scheme}://${h}:3000`;
+    }
+  }
+
   let depuisEnv = urlDepuisVariableEnv();
   if (depuisEnv !== null && envLoopbackIncompatibleAvecPage(depuisEnv)) {
     depuisEnv = null;

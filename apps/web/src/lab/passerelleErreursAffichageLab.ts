@@ -1,3 +1,31 @@
+function hoteUrlEstLoopback(urlComplete: string): boolean {
+  try {
+    const h = new URL(urlComplete).hostname.toLowerCase();
+    return h === "127.0.0.1" || h === "localhost" || h === "[::1]";
+  } catch {
+    return false;
+  }
+}
+
+function hoteUrlEgaleHotePage(urlComplete: string): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    return new URL(urlComplete).hostname === window.location.hostname;
+  } catch {
+    return false;
+  }
+}
+
+function hotePageEstLoopback(): boolean {
+  if (typeof window === "undefined") {
+    return true;
+  }
+  const h = window.location.hostname.toLowerCase();
+  return h === "127.0.0.1" || h === "localhost" || h === "[::1]";
+}
+
 /**
  * Explique une erreur « Failed to fetch » : le navigateur n’a pas obtenu de réponse HTTP exploitable
  * (réseau, URL, pare-feu, contenu mixte, CORS bloqué avant réponse, etc.).
@@ -7,6 +35,27 @@ export function formaterErreurReseauFetch(
   erreur: unknown,
 ): string {
   const msg = erreur instanceof Error ? erreur.message : String(erreur);
+  const verifs: string[] = [];
+
+  if (hoteUrlEstLoopback(urlComplete) && !hotePageEstLoopback()) {
+    verifs.push(
+      "• L’URL utilise 127.0.0.1 ou localhost : le navigateur contacte votre PC, pas le serveur. Ouvrez le panel avec l’IP ou le domaine du VPS (ex. http://IP:5173) : l’API suivra automatiquement http://IP:3000.",
+    );
+  } else if (hoteUrlEgaleHotePage(urlComplete)) {
+    verifs.push(
+      "• L’URL utilise le même hôte que la page (port 3000). Si l’erreur continue : ouvrir le port 3000 (ufw, firewalld, pare-feu du fournisseur), vérifier que la passerelle tourne et écoute sur 0.0.0.0 (journal infra/logs/passerelle.log).",
+    );
+  } else {
+    verifs.push(
+      "• Connectivité vers l’hôte et le port de l’URL ci-dessus (pare-feu, service démarré).",
+    );
+  }
+
+  verifs.push(
+    "• Page en HTTPS et API en HTTP : contenu mixte bloqué par le navigateur.",
+    "• Après changement de code ou d’`.env` : redémarrer Vite (`pnpm dev`) ou rebuilder le front.",
+  );
+
   return [
     "Impossible de joindre la passerelle (aucune réponse HTTP reçue).",
     "",
@@ -14,11 +63,7 @@ export function formaterErreurReseauFetch(
     `Message navigateur : ${msg}`,
     "",
     "Vérifications :",
-    "• Depuis un autre PC que le VPS : dans apps/web/.env, VITE_GATEWAY_BASE_URL doit être l’URL publique (ex. http://IP_OU_DOMAINE:3000), pas http://127.0.0.1:3000.",
-    "• Pare-feu : port 3000 ouvert (ufw / firewalld + panneau de l’hébergeur).",
-    "• Passerelle active : voir infra/logs/passerelle.log sur le serveur.",
-    "• Page en HTTPS qui appelle une API en HTTP : le navigateur bloque (contenu mixte).",
-    "• Après mise à jour du code : rebuild (pnpm run build) et redémarrage des services.",
+    ...verifs,
   ].join("\n");
 }
 
