@@ -34,6 +34,32 @@ function envLoopbackIncompatibleAvecPage(urlAbsolue: string): boolean {
   }
 }
 
+/**
+ * `VITE_GATEWAY_BASE_URL=http(s)://<même hôte>:3000` en dev : souvent copié-collé pour « corriger »
+ * l’accès distant, alors que le pare-feu n’ouvre pas le 3000 — le proxy Vite suffit. On ignore cette
+ * valeur en dev (si le proxy est autorisé) pour forcer `/__kidopanel_gateway`.
+ * Une API sur un autre hôte ou un port ≠ 3000 reste prise en compte.
+ */
+function envDevMemeHotePortPasserelleStandard(urlAbsolue: string): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  try {
+    const u = new URL(urlAbsolue);
+    const pageH = window.location.hostname;
+    if (pageH === "" || u.hostname !== pageH) {
+      return false;
+    }
+    if (u.port !== "3000") {
+      return false;
+    }
+    const chemin = u.pathname.replace(/\/$/, "") || "/";
+    return chemin === "/";
+  } catch {
+    return false;
+  }
+}
+
 function urlPasserelleHorsEnvSurMemeHoteQueLaPage(): string {
   if (typeof window === "undefined") {
     return "http://127.0.0.1:3000";
@@ -95,6 +121,14 @@ export function urlBasePasserelle(): string {
       if (
         depuisEnvHorsLocal !== null &&
         envLoopbackIncompatibleAvecPage(depuisEnvHorsLocal)
+      ) {
+        depuisEnvHorsLocal = null;
+      }
+      if (
+        import.meta.env.DEV &&
+        devPasserelleUtiliseProxyVite() &&
+        depuisEnvHorsLocal !== null &&
+        envDevMemeHotePortPasserelleStandard(depuisEnvHorsLocal)
       ) {
         depuisEnvHorsLocal = null;
       }
