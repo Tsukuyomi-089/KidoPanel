@@ -9,14 +9,16 @@ import {
   appelerPasserelle,
   composerUrlPasserelle,
   corpsErreurDepuisReponse,
-  enrichirTexteErreurPourAffichage,
   enregistrerJetonStockage,
   formaterErreurAffichage,
-  formaterErreurPourAffichagePanel,
   lireJetonStockage,
-  sondageSantePasserelle,
   urlBasePasserelle,
 } from "./passerelleClient.js";
+import {
+  enrichirTexteErreurPourAffichage,
+  formaterErreurPourAffichagePanel,
+} from "./passerelleErreursAffichageLab.js";
+import { sondageSantePasserelle } from "./passerelleSondeLab.js";
 import { styleBlocLab, stylePreLab } from "./stylesCommunsLab.js";
 import type { ResumeConteneurLab } from "./typesConteneurLab.js";
 

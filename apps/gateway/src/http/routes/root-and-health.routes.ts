@@ -16,5 +16,16 @@ export function monterRoutesRacineEtSante(
     }),
   );
 
+  /**
+   * Santé de la passerelle seule (sans appel au container-engine) : distingue « passerelle
+   * injoignable » et « moteur Docker injoignable » lorsque GET /health renvoie 502.
+   */
+  app.get("/health/gateway", (c) =>
+    c.json({
+      service: "gateway",
+      status: "ok",
+    }),
+  );
+
   app.get("/health", (c) => forwardRequestToContainerEngine(c));
 }

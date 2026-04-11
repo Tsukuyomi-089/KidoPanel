@@ -1,7 +1,7 @@
 import { useFluxJournauxConteneur } from "../hooks/useFluxJournauxConteneur.js";
+import { enrichirTexteErreurPourAffichage } from "./passerelleErreursAffichageLab.js";
 import {
   composerUrlPasserelle,
-  enrichirTexteErreurPourAffichage,
   urlBasePasserelle,
 } from "./passerelleClient.js";
 import { styleBlocLab, stylePreLab } from "./stylesCommunsLab.js";

@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  formaterErreurPourAffichagePanel,
-} from "../lab/passerelleClient.js";
+import { formaterErreurPourAffichagePanel } from "../lab/passerelleErreursAffichageLab.js";
 
 export type OptionsFluxJournauxConteneur = {
   urlBasePasserelle: string;
