@@ -47,8 +47,24 @@ function urlPasserelleHorsEnvSurMemeHoteQueLaPage(): string {
 }
 
 /**
- * Base des appels à la passerelle : en dev, proxy Vite (même origine) si aucune URL absolue
- * valide ; en prod, variable d’environnement ou même hôte que la page sur le port 3000.
+ * En dev sans `VITE_GATEWAY_BASE_URL` : URL directe même hôte:3000 (navigateur → passerelle),
+ * sauf si `VITE_GATEWAY_DEV_USE_PROXY=1` (relais Vite vers 127.0.0.1:3000, port 3000 non requis côté WAN).
+ */
+function urlPasserelleDevSansVariableExplicite(): string {
+  if (typeof window === "undefined") {
+    return "http://127.0.0.1:3000";
+  }
+  const proxyActif =
+    import.meta.env.VITE_GATEWAY_DEV_USE_PROXY === "1" ||
+    import.meta.env.VITE_GATEWAY_DEV_USE_PROXY === "true";
+  if (proxyActif) {
+    return `${window.location.origin}${CHEMIN_PROXY_PASSERELLE_DEV}`;
+  }
+  return urlPasserelleHorsEnvSurMemeHoteQueLaPage();
+}
+
+/**
+ * Base des appels à la passerelle : en prod ou build, variable d’environnement ou même hôte :3000.
  */
 export function urlBasePasserelle(): string {
   let depuisEnv = urlDepuisVariableEnv();
@@ -58,7 +74,7 @@ export function urlBasePasserelle(): string {
 
   if (import.meta.env.DEV && typeof window !== "undefined") {
     if (depuisEnv === null) {
-      return `${window.location.origin}${CHEMIN_PROXY_PASSERELLE_DEV}`;
+      return urlPasserelleDevSansVariableExplicite();
     }
     return depuisEnv;
   }

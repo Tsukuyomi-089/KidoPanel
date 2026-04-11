@@ -234,8 +234,8 @@ export function InterfaceTestPasserelle() {
       <h1 style={{ fontSize: "1.25rem" }}>KidoPanel — test passerelle</h1>
       <p style={{ fontSize: "0.9rem", opacity: 0.85 }}>
         Passerelle : <code>{urlBasePasserelle()}</code> — en{" "}
-        <code>pnpm dev</code>, relais Vite vers <code>127.0.0.1:3000</code> sauf si{" "}
-        <code>VITE_GATEWAY_BASE_URL</code> pointe vers une autre origine (non-loopback).
+        <code>pnpm dev</code>, même hôte que la page sur le port 3000 ; proxy Vite uniquement si{" "}
+        <code>VITE_GATEWAY_DEV_USE_PROXY=1</code> (voir <code>apps/web/.env.example</code>).
       </p>
 
       <div

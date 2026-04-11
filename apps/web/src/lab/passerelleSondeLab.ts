@@ -47,7 +47,7 @@ export async function sondageSantePasserelle(): Promise<{
       if (reponsePasserelle.status === 502) {
         lignes.push(
           "",
-          "Un 502 sur ce chemin signifie en pratique : le serveur Vite n’a pas réussi à joindre la cible du proxy (par défaut http://127.0.0.1:3000 sur la machine où tourne Vite). Vérifier que la passerelle est démarrée, écoute le port 3000, et que `pnpm --filter gateway run build` a été exécuté après les mises à jour ; journal : infra/logs/passerelle.log.",
+          "502 via le proxy Vite : la cible http://127.0.0.1:3000 est injoignable depuis le processus Vite (passerelle arrêtée, build obsolète, ou port occupé). Retirer `VITE_GATEWAY_DEV_USE_PROXY` du `.env` web pour appeler directement le port 3000 sur l’hôte de la page (ouvrir le 3000 sur le pare-feu si besoin). Journal : infra/logs/passerelle.log.",
         );
       }
       return {
