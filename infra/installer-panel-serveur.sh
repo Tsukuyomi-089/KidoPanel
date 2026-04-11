@@ -290,17 +290,46 @@ arreter_processus_pidfichier() {
   rm -f "$f"
 }
 
-arreter_panel() {
+# Libère un port TCP si un ancien processus (hors PID enregistré) occupe encore 8787 / 3000 / 5173.
+liberer_port_tcp() {
+  local port="$1"
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${port}/tcp" 2>/dev/null || true
+    return 0
+  fi
+  if command -v lsof >/dev/null 2>&1; then
+    local p
+    for p in $(lsof -t -iTCP:"${port}" -sTCP:LISTEN 2>/dev/null); do
+      kill -9 "$p" 2>/dev/null || true
+    done
+  fi
+}
+
+# Arrêt des PIDs enregistrés puis libération des ports (évite EADDRINUSE si un vieux node écoute encore).
+reinitialiser_processus_panel() {
   mkdir -p "$DIR_RUN"
-  echo "Arrêt des processus du panel (si actifs)…"
   arreter_processus_pidfichier "$PID_WEB"
   arreter_processus_pidfichier "$PID_PASSERELLE"
   arreter_processus_pidfichier "$PID_MOTEUR"
+  sleep 1
+  liberer_port_tcp 5175
+  liberer_port_tcp 5174
+  liberer_port_tcp 5173
+  liberer_port_tcp 3000
+  liberer_port_tcp 8787
+  sleep 1
+}
+
+arreter_panel() {
+  echo "Arrêt des processus du panel (si actifs)…"
+  reinitialiser_processus_panel
 }
 
 demarrer_panel() {
   mkdir -p "$DIR_RUN" "$LOG_DIR"
   cd "$RACINE_DEPOT"
+  echo "Préparation : arrêt des anciens processus et libération des ports 5173–5175, 3000, 8787…"
+  reinitialiser_processus_panel
   echo "Démarrage du panel en arrière-plan (journaux : ${LOG_DIR}/)…"
 
   nohup bash -c "cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter container-engine start" \
@@ -311,7 +340,7 @@ demarrer_panel() {
     >>"${LOG_DIR}/passerelle.log" 2>&1 &
   echo $! >"$PID_PASSERELLE"
 
-  nohup bash -c "cd \"$RACINE_DEPOT\" && exec pnpm --filter web run dev -- --host 0.0.0.0" \
+  nohup bash -c "cd \"$RACINE_DEPOT\" && exec pnpm --filter web run dev" \
     >>"${LOG_DIR}/web.log" 2>&1 &
   echo $! >"$PID_WEB"
 

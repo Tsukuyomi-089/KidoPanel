@@ -11,6 +11,7 @@ import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
 import { monterRoutesRacineEtSante } from "./routes/root-and-health.routes.js";
 import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
+import { creerMiddlewareCorsPanel } from "./middleware/cors-panel.middleware.js";
 import {
   middlewareCorrelationRequete,
   routeMetriquesPasserelle,
@@ -33,6 +34,7 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
 
   const app = new Hono<{ Variables: VariablesGateway }>();
 
+  app.use("*", creerMiddlewareCorsPanel());
   app.use("*", middlewareCorrelationRequete);
   app.use(
     "*",
