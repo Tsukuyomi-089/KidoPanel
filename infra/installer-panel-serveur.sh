@@ -332,6 +332,21 @@ arreter_panel() {
   reinitialiser_processus_panel
 }
 
+# Attend que la passerelle réponde sur 127.0.0.1:3000 avant de lancer Vite (le proxy dev pointe vers cette adresse).
+attendre_passerelle_proxy() {
+  local max=60
+  local i=0
+  while [[ $i -lt $max ]]; do
+    if curl -sf --connect-timeout 2 "http://127.0.0.1:3000/" >/dev/null 2>&1; then
+      echo "Passerelle joignable sur 127.0.0.1:3000 (proxy Vite)."
+      return 0
+    fi
+    sleep 1
+    i=$((i + 1))
+  done
+  echo_err "Passerelle injoignable sur http://127.0.0.1:3000 après ${max}s — consulter ${LOG_DIR}/passerelle.log ; le web démarre quand même."
+}
+
 demarrer_panel() {
   mkdir -p "$DIR_RUN" "$LOG_DIR"
   cd "$RACINE_DEPOT"
@@ -346,6 +361,8 @@ demarrer_panel() {
   nohup bash -c "cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter gateway start" \
     >>"${LOG_DIR}/passerelle.log" 2>&1 &
   echo $! >"$PID_PASSERELLE"
+
+  attendre_passerelle_proxy
 
   nohup bash -c "cd \"$RACINE_DEPOT\" && exec pnpm --filter web run dev" \
     >>"${LOG_DIR}/web.log" 2>&1 &

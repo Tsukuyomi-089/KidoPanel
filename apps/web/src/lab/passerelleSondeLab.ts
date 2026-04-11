@@ -39,13 +39,20 @@ export async function sondageSantePasserelle(): Promise<{
       cache: "no-store",
     });
     if (!reponsePasserelle.ok) {
+      const lignes = [
+        "La requête vers la passerelle via le proxy Vite a échoué.",
+        `URL : ${urlPasserelleSeule}`,
+        `HTTP ${reponsePasserelle.status}`,
+      ];
+      if (reponsePasserelle.status === 502) {
+        lignes.push(
+          "",
+          "Un 502 sur ce chemin signifie en pratique : le serveur Vite n’a pas réussi à joindre la cible du proxy (par défaut http://127.0.0.1:3000 sur la machine où tourne Vite). Vérifier que la passerelle est démarrée, écoute le port 3000, et que `pnpm --filter gateway run build` a été exécuté après les mises à jour ; journal : infra/logs/passerelle.log.",
+        );
+      }
       return {
         joignable: false,
-        message: [
-          "La passerelle HTTP ne répond pas correctement sur /health/gateway.",
-          `URL : ${urlPasserelleSeule}`,
-          `HTTP ${reponsePasserelle.status}`,
-        ].join("\n"),
+        message: lignes.join("\n"),
       };
     }
   } catch (erreur) {
