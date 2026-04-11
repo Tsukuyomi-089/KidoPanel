@@ -11,6 +11,7 @@ import {
   enregistrerJetonStockage,
   formaterErreurAffichage,
   lireJetonStockage,
+  sondageSantePasserelle,
   urlBasePasserelle,
 } from "./passerelleClient.js";
 import { styleBlocLab, stylePreLab } from "./stylesCommunsLab.js";
@@ -33,10 +34,37 @@ export function InterfaceTestPasserelle() {
   const [messageErreur, setMessageErreur] = useState<string | null>(null);
   const [chargementListe, setChargementListe] = useState(false);
   const [fluxJournauxActif, setFluxJournauxActif] = useState(false);
+  const [etatSondePasserelle, setEtatSondePasserelle] = useState<
+    "en_cours" | "ok" | "echec"
+  >("en_cours");
+  const [texteSondePasserelle, setTexteSondePasserelle] = useState("");
 
   useEffect(() => {
     enregistrerJetonStockage(jeton);
   }, [jeton]);
+
+  useEffect(() => {
+    let annule = false;
+    void (async () => {
+      setEtatSondePasserelle("en_cours");
+      const resultat = await sondageSantePasserelle();
+      if (annule) {
+        return;
+      }
+      setEtatSondePasserelle(resultat.joignable ? "ok" : "echec");
+      setTexteSondePasserelle(resultat.message);
+    })();
+    return () => {
+      annule = true;
+    };
+  }, []);
+
+  const reverifierPasserelle = async () => {
+    setEtatSondePasserelle("en_cours");
+    const resultat = await sondageSantePasserelle();
+    setEtatSondePasserelle(resultat.joignable ? "ok" : "echec");
+    setTexteSondePasserelle(resultat.message);
+  };
 
   const afficherErreurSiBesoin = useCallback(async (reponse: Response) => {
     if (reponse.ok) {
@@ -173,6 +201,38 @@ export function InterfaceTestPasserelle() {
         Passerelle : <code>{urlBasePasserelle()}</code> (variable{" "}
         <code>VITE_GATEWAY_BASE_URL</code>)
       </p>
+
+      <div
+        style={{
+          ...styleBlocLab,
+          marginBottom: "0.75rem",
+          borderColor:
+            etatSondePasserelle === "ok"
+              ? "#2a5a2a"
+              : etatSondePasserelle === "echec"
+                ? "#a33"
+                : "#555",
+        }}
+      >
+        <strong>Sonde GET /health</strong>
+        {etatSondePasserelle === "en_cours" ? (
+          <p style={{ margin: "0.35rem 0 0", fontSize: "0.9rem" }}>
+            Vérification en cours…
+          </p>
+        ) : (
+          <pre style={{ ...stylePreLab, marginTop: "0.35rem" }}>
+            {texteSondePasserelle}
+          </pre>
+        )}
+        <button
+          type="button"
+          onClick={() => void reverifierPasserelle()}
+          disabled={etatSondePasserelle === "en_cours"}
+          style={{ marginTop: "0.5rem" }}
+        >
+          Revérifier la connexion
+        </button>
+      </div>
 
       {messageErreur ? (
         <div

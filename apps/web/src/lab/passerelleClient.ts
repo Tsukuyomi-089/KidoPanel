@@ -62,6 +62,65 @@ export function formaterErreurAffichage(corps: CorpsErreurPasserelle): string {
   return lignes.join("\n");
 }
 
+/**
+ * Explique une erreur « Failed to fetch » : le navigateur n’a pas obtenu de réponse HTTP exploitable
+ * (réseau, URL, pare-feu, contenu mixte, CORS bloqué avant réponse, etc.).
+ */
+export function formaterErreurReseauFetch(
+  urlComplete: string,
+  erreur: unknown,
+): string {
+  const msg = erreur instanceof Error ? erreur.message : String(erreur);
+  return [
+    "Impossible de joindre la passerelle (aucune réponse HTTP reçue).",
+    "",
+    `URL : ${urlComplete}`,
+    `Message navigateur : ${msg}`,
+    "",
+    "Vérifications :",
+    "• Depuis un autre PC que le VPS : dans apps/web/.env, VITE_GATEWAY_BASE_URL doit être l’URL publique (ex. http://IP_OU_DOMAINE:3000), pas http://127.0.0.1:3000.",
+    "• Pare-feu : port 3000 ouvert (ufw / firewalld + panneau de l’hébergeur).",
+    "• Passerelle active : voir infra/logs/passerelle.log sur le serveur.",
+    "• Page en HTTPS qui appelle une API en HTTP : le navigateur bloque (contenu mixte).",
+    "• Après mise à jour du code : rebuild (pnpm run build) et redémarrage des services.",
+  ].join("\n");
+}
+
+/** Indique si GET /health répond ; utile pour diagnostiquer avant login. */
+export async function sondageSantePasserelle(): Promise<{
+  joignable: boolean;
+  message: string;
+}> {
+  const url = `${urlBasePasserelle()}/health`;
+  try {
+    const reponse = await fetch(url, {
+      method: "GET",
+      mode: "cors",
+      cache: "no-store",
+    });
+    if (reponse.ok) {
+      return {
+        joignable: true,
+        message: `Passerelle joignable — ${url} (HTTP ${reponse.status})`,
+      };
+    }
+    return {
+      joignable: false,
+      message: [
+        `La passerelle répond mais /health n’est pas OK.`,
+        `URL : ${url}`,
+        `HTTP ${reponse.status}`,
+        "Le moteur Docker est peut-être arrêté ou injoignable (voir infra/logs/moteur.log).",
+      ].join("\n"),
+    };
+  } catch (erreur) {
+    return {
+      joignable: false,
+      message: formaterErreurReseauFetch(url, erreur),
+    };
+  }
+}
+
 type OptionsAppel = RequestInit & {
   /** Surcharge du jeton (sinon lecture du stockage local). */
   jetonBearer?: string;
@@ -86,5 +145,14 @@ export async function appelerPasserelle(
   if (jeton.trim() !== "") {
     enTetes.set("Authorization", `Bearer ${jeton}`);
   }
-  return fetch(url, { ...reste, headers: enTetes });
+  try {
+    return await fetch(url, {
+      ...reste,
+      headers: enTetes,
+      mode: "cors",
+      cache: "no-store",
+    });
+  } catch (erreur) {
+    throw new Error(formaterErreurReseauFetch(url, erreur));
+  }
 }
