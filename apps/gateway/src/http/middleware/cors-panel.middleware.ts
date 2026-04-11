@@ -8,7 +8,12 @@ import type { MiddlewareHandler } from "hono";
 export function creerMiddlewareCorsPanel(): MiddlewareHandler {
   return cors({
     origin: (origine) => origine ?? "*",
-    allowHeaders: ["Content-Type", "Authorization", "Accept"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Accept",
+      "X-Requested-With",
+    ],
     allowMethods: [
       "GET",
       "HEAD",

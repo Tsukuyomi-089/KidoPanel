@@ -1,15 +1,25 @@
+import { getConnInfo } from "@hono/node-server/conninfo";
 import type { Context, Next } from "hono";
 
 type Seau = { compteur: number; finFenetre: number };
 
 const seaux = new Map<string, Seau>();
 
+/**
+ * Clé de limitation : en-têtes de proxy si présents, sinon adresse TCP réelle (évite de tout regrouper sous « inconnu »).
+ */
 function cleClient(c: Context): string {
   const xff = c.req.header("x-forwarded-for");
   const premier = xff?.split(",")[0]?.trim();
   if (premier) return premier;
   const reel = c.req.header("x-real-ip");
-  if (reel) return reel;
+  if (reel) return reel.trim();
+  try {
+    const adresse = getConnInfo(c).remote.address;
+    if (adresse) return adresse;
+  } catch {
+    /* hors adaptateur Node (ex. tests Vitest avec app.request) */
+  }
   return "inconnu";
 }
 
@@ -24,6 +34,9 @@ export function creerMiddlewareRateLimit(
     c: Context,
     next: Next,
   ): Promise<Response | void> {
+    if (c.req.method === "OPTIONS") {
+      return await next();
+    }
     const maintenant = Date.now();
     const cle = cleClient(c);
     let seau = seaux.get(cle);
