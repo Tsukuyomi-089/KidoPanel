@@ -1,10 +1,32 @@
+/**
+ * URL par défaut quand `VITE_GATEWAY_BASE_URL` est absent : en mode dev Vite, si la page
+ * n’est pas servie en loopback, on réutilise le même hôte que la barre d’adresse (port 3000).
+ * Ainsi un accès `http://IP_DU_VPS:5173` appelle la passerelle sur `http://IP_DU_VPS:3000`.
+ */
+function urlPasserelleParDefautSansVariable(): string {
+  if (!import.meta.env.DEV || typeof window === "undefined") {
+    return "http://127.0.0.1:3000";
+  }
+  const h = window.location.hostname;
+  if (
+    h === "" ||
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    h === "[::1]"
+  ) {
+    return "http://127.0.0.1:3000";
+  }
+  const scheme = window.location.protocol === "https:" ? "https" : "http";
+  return `${scheme}://${h}:3000`;
+}
+
 /** URL de base de la passerelle (variable Vite `VITE_GATEWAY_BASE_URL`, sans slash final). */
 export function urlBasePasserelle(): string {
   const brute = import.meta.env.VITE_GATEWAY_BASE_URL?.trim();
   if (brute && brute.length > 0) {
     return brute.replace(/\/$/, "");
   }
-  return "http://127.0.0.1:3000";
+  return urlPasserelleParDefautSansVariable();
 }
 
 const CLE_JWT_LAB = "kido-panel-lab-jwt";
