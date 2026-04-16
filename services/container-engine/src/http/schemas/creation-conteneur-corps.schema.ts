@@ -75,7 +75,13 @@ const hostConfigCorpsSchema = z.object({
   shmSizeBytes: z.number().int().positive().optional(),
   tmpfs: z.record(z.string().min(1).max(4096), z.string().max(512)).optional(),
   ulimits: z.array(ulimitSchema).max(64).optional(),
-  sysctls: z.record(z.string().min(1).max(256), z.string().max(512)).max(64).optional(),
+  sysctls: z
+    .record(z.string().min(1).max(256), z.string().max(512))
+    .optional()
+    .refine(
+      (val) => val === undefined || Object.keys(val).length <= 64,
+      "Au plus 64 clés sysctl.",
+    ),
   groupAdd: z.array(z.string().min(1).max(64)).max(64).optional(),
   init: z.boolean().optional(),
   cpuShares: z.number().int().positive().optional(),

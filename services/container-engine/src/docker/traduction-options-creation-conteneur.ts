@@ -4,12 +4,18 @@ import type {
   EndpointSettings,
   HealthConfig,
   HostConfig,
-  NetworkingConfig,
   PortBinding as DockerPortBinding,
-  RestartPolicy,
   Ulimit as DockerUlimit,
 } from "dockerode";
 import type { ContainerCreateSpec, ContainerHostConfig } from "../types.js";
+
+/**
+ * Forme du champ `NetworkingConfig` à la création (non exportée par les types dockerode
+ * de ce dépôt ; alignée sur l’API Docker Engine).
+ */
+interface ConfigurationReseauCreationDocker {
+  EndpointsConfig: Record<string, EndpointSettings>;
+}
 
 /** Secondes positives vers nanosecondes entières pour les champs santé Docker. */
 function secondesVersNanosecondes(secondes: number | undefined): number | undefined {
@@ -53,7 +59,7 @@ function liaisonsPortsVersDocker(
 /** Traduit la politique de redémarrage métier vers l’objet Docker. */
 function politiqueRedemarrageVersDocker(
   politique: ContainerHostConfig["restartPolicy"],
-): RestartPolicy | undefined {
+): HostConfig["RestartPolicy"] {
   if (!politique) {
     return undefined;
   }
@@ -94,7 +100,7 @@ function peripheriquesVersDocker(
 /** Construit `NetworkingConfig` pour les réseaux nommés à la création. */
 function configurationReseauVersDocker(
   spec: ContainerCreateSpec,
-): NetworkingConfig | undefined {
+): ConfigurationReseauCreationDocker | undefined {
   const points = spec.networkingConfig?.endpointsConfig;
   if (!points || Object.keys(points).length === 0) {
     return undefined;
@@ -193,6 +199,8 @@ export function traduireOptionsCreationConteneur(
     ? Object.entries(spec.env).map(([cle, valeur]) => `${cle}=${valeur}`)
     : undefined;
 
+  const reseau = configurationReseauVersDocker(spec);
+
   return {
     name: spec.name,
     Image: spec.image,
@@ -208,9 +216,9 @@ export function traduireOptionsCreationConteneur(
     Labels: spec.labels,
     ExposedPorts: exposerPortsDepuisListe(spec.exposedPorts),
     HostConfig: hostConfigVersDocker(spec.hostConfig),
-    NetworkingConfig: configurationReseauVersDocker(spec),
+    ...(reseau !== undefined ? { NetworkingConfig: reseau } : {}),
     Healthcheck: healthcheckVersDocker(spec.healthcheck),
     OpenStdin: spec.openStdin,
     Tty: spec.tty,
-  };
+  } as ContainerCreateOptions;
 }
