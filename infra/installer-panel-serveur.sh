@@ -23,6 +23,9 @@ VERSION_NODE_INSTALLER_BINAIRE="20.20.2"
 # Référence du dépôt nvm-sh/nvm (script d’installation curl).
 NVM_VERSION_REF_INSTALL="v0.40.1"
 CHEMIN_ENV_NODE_PANEL="${DIR_RUN}/env-chemin-node.sh"
+CHEMIN_COMPOSE_POSTGRES="${RACINE_DEPOT}/docker-compose.yml"
+# Doit rester aligné sur `container_name` du service postgres dans docker-compose.yml.
+NOM_CONTENEUR_POSTGRES_PANEL="kydopanel-postgres"
 
 echo_err() {
   echo "$*" >&2
@@ -60,14 +63,24 @@ done
 
 DOCKER_COMPOSE=()
 
+# Indique si la sous-commande « docker compose » est le plugin officiel en branche majeure 2+.
+compose_plugin_docker_est_version_majeure_2() {
+  command -v docker >/dev/null 2>&1 || return 1
+  docker compose version >/dev/null 2>&1 || return 1
+  local court maj
+  court="$(docker compose version --short 2>/dev/null || echo "")"
+  court="${court#v}"
+  if [[ -n "$court" ]]; then
+    maj="${court%%.*}"
+    [[ "$maj" =~ ^[0-9]+$ ]] && [[ "$maj" -ge 2 ]] && return 0
+  fi
+  docker compose version 2>/dev/null | grep -qiE 'compose[[:space:]]+version[[:space:]]+v2|Docker Compose version[[:space:]]+v2'
+}
+
 definir_commande_compose_si_disponible() {
   DOCKER_COMPOSE=()
-  if docker compose version >/dev/null 2>&1; then
+  if compose_plugin_docker_est_version_majeure_2; then
     DOCKER_COMPOSE=(docker compose)
-    return 0
-  fi
-  if command -v docker-compose >/dev/null 2>&1 && docker-compose version >/dev/null 2>&1; then
-    DOCKER_COMPOSE=(docker-compose)
     return 0
   fi
   return 1
@@ -179,24 +192,35 @@ demarrer_service_docker_si_possible() {
   fi
 }
 
-# Installe Docker Engine et le plugin Compose v2 via les dépôts (Debian, Fedora, RHEL, Alpine).
+# Installe Docker Engine et le plugin Compose v2 via les dépôts (priorité Debian et Fedora).
 installer_paquetage_docker_moteur() {
   [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]] && return 1
   if command -v apt-get >/dev/null 2>&1; then
-    echo "Tentative d’installation de Docker (docker.io) et du plugin Compose…"
-    if executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get update -qq &&
-      executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y docker.io docker-compose-plugin; then
+    echo "Debian/Ubuntu : installation de Docker (docker.io) et du plugin Docker Compose v2…"
+    executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get update -qq || return 1
+    executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      ca-certificates curl gnupg 2>/dev/null || true
+    if executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+      docker-compose-plugin docker.io; then
       demarrer_service_docker_si_possible
       command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && return 0
     fi
+    echo "Nouvel essai : plugin Compose seul si le moteur est déjà présent…"
+    executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin 2>/dev/null || true
+    demarrer_service_docker_si_possible
+    command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && return 0
     return 1
   fi
   if command -v dnf >/dev/null 2>&1; then
-    echo "Tentative d’installation de Docker et docker-compose-plugin (dnf)…"
+    echo "Fedora / Nobara : installation du paquet « docker » et du plugin « docker-compose-plugin » (Compose v2)…"
     if executer_avec_privileges dnf install -y docker docker-compose-plugin; then
       demarrer_service_docker_si_possible
       command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && return 0
     fi
+    echo "Fedora : nouvel essai avec le plugin Compose seul…"
+    executer_avec_privileges dnf install -y docker-compose-plugin 2>/dev/null || true
+    demarrer_service_docker_si_possible
+    command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1 && return 0
     return 1
   fi
   if command -v yum >/dev/null 2>&1; then
@@ -376,17 +400,23 @@ architecture_compose_github() {
 
 installer_compose_via_paquets() {
   [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]] && return 1
-  echo "Tentative d’installation du plugin Docker Compose via le gestionnaire de paquets…"
+  echo "Tentative d’installation du plugin Docker Compose v2 via le gestionnaire de paquets…"
   if command -v apt-get >/dev/null 2>&1; then
     if executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get update -qq &&
       executer_avec_privileges env DEBIAN_FRONTEND=noninteractive apt-get install -y docker-compose-plugin; then
-      return 0
+      compose_plugin_docker_est_version_majeure_2 && return 0
     fi
   fi
-  command -v dnf >/dev/null 2>&1 && executer_avec_privileges dnf install -y docker-compose-plugin 2>/dev/null && return 0
-  command -v yum >/dev/null 2>&1 && executer_avec_privileges yum install -y docker-compose-plugin 2>/dev/null && return 0
-  command -v zypper >/dev/null 2>&1 && executer_avec_privileges zypper install -y docker-compose-plugin 2>/dev/null && return 0
-  command -v apk >/dev/null 2>&1 && executer_avec_privileges apk add --no-cache docker-cli-compose 2>/dev/null && return 0
+  if command -v dnf >/dev/null 2>&1; then
+    executer_avec_privileges dnf install -y docker-compose-plugin 2>/dev/null &&
+      compose_plugin_docker_est_version_majeure_2 && return 0
+  fi
+  command -v yum >/dev/null 2>&1 && executer_avec_privileges yum install -y docker-compose-plugin 2>/dev/null &&
+    compose_plugin_docker_est_version_majeure_2 && return 0
+  command -v zypper >/dev/null 2>&1 && executer_avec_privileges zypper install -y docker-compose-plugin 2>/dev/null &&
+    compose_plugin_docker_est_version_majeure_2 && return 0
+  command -v apk >/dev/null 2>&1 && executer_avec_privileges apk add --no-cache docker-cli-compose 2>/dev/null &&
+    compose_plugin_docker_est_version_majeure_2 && return 0
   return 1
 }
 
@@ -429,21 +459,21 @@ installer_compose_via_binaire_officiel() {
 
 assurer_docker_compose() {
   if definir_commande_compose_si_disponible; then
-    echo "Prérequis OK : Compose (« ${DOCKER_COMPOSE[*]} »)"
+    echo "Prérequis OK : Docker Compose v2 (« ${DOCKER_COMPOSE[*]} », $(docker compose version --short 2>/dev/null || docker compose version 2>/dev/null | head -n1 || echo 'version inconnue'))"
     return 0
   fi
-  [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]] && echo_err "Compose indisponible (PANEL_INSTALLER_SANS_AUTO=1)." && return 1
-  echo "Compose absent : installation automatique…"
+  [[ "${PANEL_INSTALLER_SANS_AUTO:-}" == "1" ]] && echo_err "Docker Compose v2 (plugin « docker compose ») requis (PANEL_INSTALLER_SANS_AUTO=1)." && return 1
+  echo "Plugin Compose v2 absent : installation automatique (paquets Debian/Fedora ou binaire officiel)…"
   installer_compose_via_paquets || true
   if definir_commande_compose_si_disponible; then
-    echo "Prérequis OK : Compose installé via paquets."
+    echo "Prérequis OK : Docker Compose v2 installé via paquets."
     return 0
   fi
   if installer_compose_via_binaire_officiel && definir_commande_compose_si_disponible; then
-    echo "Prérequis OK : Compose installé (binaire plugin)."
+    echo "Prérequis OK : Docker Compose v2 installé (plugin dans cli-plugins)."
     return 0
   fi
-  echo_err "Impossible d’installer Docker Compose automatiquement."
+  echo_err "Impossible d’installer Docker Compose v2 (« docker compose »). L’ancien « docker-compose » 1.x n’est pas pris en charge."
   return 1
 }
 
@@ -470,10 +500,10 @@ verifier_docker() {
 
 verifier_compose_uniquement() {
   definir_commande_compose_si_disponible || {
-    echo_err "Compose indisponible."
+    echo_err "Docker Compose v2 (commande « docker compose ») indisponible."
     return 1
   }
-  echo "Prérequis OK : « ${DOCKER_COMPOSE[*]} »"
+  echo "Prérequis OK : Docker Compose v2 (« ${DOCKER_COMPOSE[*]} »)"
 }
 
 activer_pnpm() {
@@ -533,14 +563,24 @@ preparer_env_web() {
   fi
 }
 
+# Évite l’erreur « container name already in use » : arrêt du projet puis retrait du conteneur nommé réservé au panel.
+preparer_stack_postgres_avant_montee() {
+  "${DOCKER_COMPOSE[@]}" -f "$CHEMIN_COMPOSE_POSTGRES" down --remove-orphans 2>/dev/null || true
+  if docker inspect "${NOM_CONTENEUR_POSTGRES_PANEL}" >/dev/null 2>&1; then
+    echo "Suppression du conteneur « ${NOM_CONTENEUR_POSTGRES_PANEL} » orphelin ou obsolète (nom réservé au compose du panel)…"
+    docker rm -f "${NOM_CONTENEUR_POSTGRES_PANEL}" 2>/dev/null || true
+  fi
+}
+
 demarrer_postgres_et_attendre() {
   assurer_docker_moteur
   assurer_docker_compose
-  "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" up -d
+  preparer_stack_postgres_avant_montee
+  "${DOCKER_COMPOSE[@]}" -f "$CHEMIN_COMPOSE_POSTGRES" up -d
   echo "Attente PostgreSQL…"
   local t=0
   while [[ $t -lt 60 ]]; do
-    if "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" exec -T postgres \
+    if "${DOCKER_COMPOSE[@]}" -f "$CHEMIN_COMPOSE_POSTGRES" exec -T postgres \
       pg_isready -U kydopanel -d kydopanel >/dev/null 2>&1; then
       echo "PostgreSQL prêt."
       return 0
@@ -762,16 +802,16 @@ menu_desinstaller() {
   read -r -p "Exécuter « docker compose down » (arrêt Postgres du compose) ? [o/N] " c4
   if [[ "$c4" == "o" || "$c4" == "O" ]]; then
     if definir_commande_compose_si_disponible; then
-      "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" down
+      "${DOCKER_COMPOSE[@]}" -f "$CHEMIN_COMPOSE_POSTGRES" down
       echo "Compose arrêté."
     else
-      echo_err "Compose indisponible : arrêt manuel du stack si besoin."
+      echo_err "Docker Compose v2 indisponible : arrêt manuel du stack si besoin."
     fi
   fi
   read -r -p "Supprimer aussi le volume Postgres (docker compose down -v) ? [o/N] " c5
   if [[ "$c5" == "o" || "$c5" == "O" ]]; then
     if definir_commande_compose_si_disponible; then
-      "${DOCKER_COMPOSE[@]}" -f "$RACINE_DEPOT/docker-compose.yml" down -v
+      "${DOCKER_COMPOSE[@]}" -f "$CHEMIN_COMPOSE_POSTGRES" down -v
       echo "Volumes compose supprimés."
     fi
   fi
