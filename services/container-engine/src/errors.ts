@@ -1,6 +1,8 @@
 /** Codes d’erreur normalisés renvoyés par le moteur de conteneurs. */
 export type ContainerEngineErrorCode =
   | "DOCKER_UNAVAILABLE"
+  | "IMAGE_NOT_FOUND"
+  | "IMAGE_PULL_FAILED"
   | "NOT_FOUND"
   | "CONFLICT"
   | "INVALID_SPEC"

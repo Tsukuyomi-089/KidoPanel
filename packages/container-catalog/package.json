@@ -1,0 +1,24 @@
+{
+  "name": "@kidopanel/container-catalog",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Catalogue d’images Docker de base partagé pour l’UX KidoPanel",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "node -e \"\""
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "typescript": "^6.0.2"
+  }
+}

@@ -9,6 +9,7 @@ import {
 } from "../config/gateway-env.js";
 import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
+import { monterRouteProxyImages } from "./routes/images-proxy.routes.js";
 import { monterRoutesRacineEtSante } from "./routes/root-and-health.routes.js";
 import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
 import { creerMiddlewareCorsPanel } from "./middleware/cors-panel.middleware.js";
@@ -45,6 +46,7 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   app.get("/metrics", routeMetriquesPasserelle);
   monterRoutesAuth(app, serviceAuth);
   monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
+  monterRouteProxyImages(app, secretJwt);
 
   app.notFound((c) =>
     c.json(

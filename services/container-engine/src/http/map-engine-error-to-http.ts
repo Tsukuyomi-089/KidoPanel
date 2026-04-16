@@ -11,7 +11,10 @@ export interface EngineErrorHttpBody {
 /** Associe chaque code d’erreur du moteur à un statut HTTP et au corps de réponse. */
 export function statusAndBodyForEngineError(
   err: ContainerEngineError,
-): { status: 400 | 404 | 409 | 500 | 503; body: EngineErrorHttpBody } {
+): {
+  status: 400 | 404 | 409 | 500 | 502 | 503;
+  body: EngineErrorHttpBody;
+} {
   const body: EngineErrorHttpBody = {
     error: {
       code: err.code,
@@ -21,6 +24,10 @@ export function statusAndBodyForEngineError(
   switch (err.code) {
     case "DOCKER_UNAVAILABLE":
       return { status: 503, body };
+    case "IMAGE_NOT_FOUND":
+      return { status: 404, body };
+    case "IMAGE_PULL_FAILED":
+      return { status: 502, body };
     case "NOT_FOUND":
       return { status: 404, body };
     case "CONFLICT":

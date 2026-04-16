@@ -18,6 +18,11 @@ import {
   type DockerClient,
   type DockerConnectionOptions,
 } from "./docker-connection.js";
+import {
+  creerServiceImagesDocker,
+  executerTirageImageDocker,
+  type ServiceImagesDocker,
+} from "./docker/image.service.js";
 import { wrapDockerError } from "./docker/wrap-docker-operation.js";
 import {
   lireJournauxConteneur,
@@ -118,6 +123,7 @@ export interface ContainerEngineOptions {
  */
 export class ContainerEngine {
   private readonly docker: DockerClient;
+  private readonly serviceImages: ServiceImagesDocker;
 
   constructor(options?: ContainerEngineOptions) {
     if (options?.docker) {
@@ -125,6 +131,7 @@ export class ContainerEngine {
     } else {
       this.docker = createDockerClient(options?.connection);
     }
+    this.serviceImages = creerServiceImagesDocker(this.docker);
   }
 
   /** Indique si le démon répond au ping. */
@@ -163,13 +170,15 @@ export class ContainerEngine {
       );
     }
 
+    const referenceImage = spec.image.trim();
+
     const env = spec.env
       ? Object.entries(spec.env).map(([k, v]) => `${k}=${v}`)
       : undefined;
 
     const opts: ContainerCreateOptions = {
       name: spec.name,
-      Image: spec.image,
+      Image: referenceImage,
       Cmd: spec.cmd,
       Env: env,
       Labels: spec.labels,
@@ -180,6 +189,7 @@ export class ContainerEngine {
     };
 
     try {
+      await this.serviceImages.ensureImageAvailable(referenceImage);
       const container = await this.docker.createContainer(opts);
       return {
         id: container.id,
@@ -227,32 +237,7 @@ export class ContainerEngine {
         "Une référence d’image est obligatoire.",
       );
     }
-    try {
-      await new Promise<void>((resolve, reject) => {
-        this.docker.pull(
-          imageRef,
-          (err: Error | null, stream: NodeJS.ReadableStream | undefined) => {
-            if (err) {
-              reject(err);
-              return;
-            }
-            if (!stream) {
-              reject(new Error("tirage d’image : flux de réponse vide"));
-              return;
-            }
-            this.docker.modem.followProgress(
-              stream,
-              (followErr: Error | null | undefined) => {
-                if (followErr) reject(followErr);
-                else resolve();
-              },
-            );
-          },
-        );
-      });
-    } catch (e) {
-      wrapDockerError(e);
-    }
+    await executerTirageImageDocker(this.docker, imageRef.trim());
   }
 
   /**

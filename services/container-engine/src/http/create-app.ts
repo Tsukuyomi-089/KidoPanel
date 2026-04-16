@@ -7,6 +7,7 @@ import {
 } from "./middleware/correlation-requete.middleware.js";
 import { tryRespondWithEngineError } from "./respond-route-error.js";
 import { mountContainerRoutes } from "./routes/containers.routes.js";
+import { mountImagesRoutes } from "./routes/images.routes.js";
 import type { VariablesMoteurHttp } from "./variables-moteur-http.js";
 
 /** Construit l’application HTTP Hono branchée sur une instance de `ContainerEngine`. */
@@ -43,6 +44,7 @@ export function createEngineHttpApp(engine: ContainerEngine): Hono<{
   app.get("/metrics", routeMetriquesMoteur);
 
   mountContainerRoutes(app, engine);
+  mountImagesRoutes(app, engine);
 
   app.notFound((c) =>
     c.json(

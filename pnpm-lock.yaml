@@ -98,6 +98,15 @@ importers:
         specifier: ^8.0.4
         version: 8.0.8(@types/node@24.12.2)(esbuild@0.27.7)(jiti@2.6.1)
 
+  packages/container-catalog:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.2
+        version: 24.12.2
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+
   packages/database:
     dependencies:
       '@prisma/client':
