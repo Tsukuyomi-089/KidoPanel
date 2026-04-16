@@ -67,7 +67,10 @@ export async function proxyListeConteneursGet(
   depotPropriete: ContainerOwnershipRepository,
 ): Promise<Response> {
   const chemin = obtenirCheminHttpPourRoutage(c);
-  const amont = await forwardRequestToContainerEngine(c);
+  // Docker `listContainers` sans `all` n’inclut pas les conteneurs créés ou arrêtés ; le filtre propriété s’applique ensuite.
+  const amont = await forwardRequestToContainerEngine(c, {
+    parametresRequeteFusion: { all: "true" },
+  });
   if (!amont.ok) {
     if (amont.status >= 500) {
       journaliserPasserelle({

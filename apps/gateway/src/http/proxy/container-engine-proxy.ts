@@ -19,16 +19,31 @@ const EN_TETES_HOP_PAR_HOP = new Set([
 
 const EN_TETES_REPONSE_A_FILTRER = new Set(["transfer-encoding", "connection"]);
 
+/** Options optionnelles pour ajuster l’URL relais sans modifier la requête cliente. */
+export type OptionsRelaisVersContainerEngine = {
+  /**
+   * Paramètres de requête fusionnés sur l’URL entrante (remplacement par clé) avant appel au moteur.
+   * Sert notamment à imposer `all=true` sur le listage Docker tout en laissant le client sans paramètre.
+   */
+  parametresRequeteFusion?: Record<string, string>;
+};
+
 /**
  * Relaie la requête entrante vers le container-engine en conservant chemin, requête et corps,
  * sans aucun accès à Docker depuis la passerelle.
  */
 export async function forwardRequestToContainerEngine(
   c: Context<{ Variables: VariablesGateway }>,
+  options?: OptionsRelaisVersContainerEngine,
 ): Promise<Response> {
   const base = getContainerEngineBaseUrl();
   // Base factice : `c.req.url` peut être une URL relative (« /containers ») selon l’hôte Hono.
   const entrant = new URL(c.req.url, "http://127.0.0.1");
+  if (options?.parametresRequeteFusion) {
+    for (const [cle, valeur] of Object.entries(options.parametresRequeteFusion)) {
+      entrant.searchParams.set(cle, valeur);
+    }
+  }
   const cible = new URL(entrant.pathname + entrant.search, `${base}/`);
 
   const enTetes = new Headers();
