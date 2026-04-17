@@ -131,6 +131,44 @@ export function construireCorpsCreationConteneurDepuisEtat(
   if (hostname.length > 0) {
     corps.hostname = hostname;
   }
+  const domaine = etat.domaineConteneur.trim();
+  if (domaine.length > 0) {
+    corps.domainname = domaine;
+  }
+  const mac = etat.adresseMac.trim();
+  if (mac.length > 0) {
+    corps.macAddress = mac;
+  }
+  const signalArret = etat.signalArret.trim();
+  if (signalArret.length > 0) {
+    corps.stopSignal = signalArret;
+  }
+  const plateforme = etat.platformeDocker.trim();
+  if (plateforme.length > 0) {
+    corps.platform = plateforme;
+  }
+  const delaiArret = etat.delaiArretSecondes.trim();
+  if (delaiArret.length > 0) {
+    const secondes = Number(delaiArret);
+    if (Number.isFinite(secondes) && secondes >= 0 && secondes <= 3600) {
+      corps.stopTimeout = Math.round(secondes);
+    }
+  }
+  if (etat.desactiverReseauConteneur) {
+    corps.networkDisabled = true;
+  }
+  if (etat.attacherStdin) {
+    corps.attachStdin = true;
+  }
+  if (etat.attacherStdout) {
+    corps.attachStdout = true;
+  }
+  if (etat.attacherStderr) {
+    corps.attachStderr = true;
+  }
+  if (etat.stdinUneFois) {
+    corps.stdinOnce = true;
+  }
   const env = lignesCleValeurVersObjet(etat.variablesEnvironnement);
   if (env) {
     corps.env = env;
@@ -155,6 +193,8 @@ export function construireCorpsCreationConteneurDepuisEtat(
 
   const binds = lignesNonVides(etat.montagesBinds);
   const dns = listeSepareeVirgules(etat.dnsListe);
+  const dnsSearch = listeSepareeVirgules(etat.rechercheDns);
+  const dnsOptions = listeSepareeVirgules(etat.optionsDns);
   const extraHosts = listeSepareeVirgules(etat.hotesSupplementaires);
   const capAdd = listeSepareeVirgules(etat.capacitesAjout);
   const capDrop = listeSepareeVirgules(etat.capacitesRetrait);
@@ -191,8 +231,104 @@ export function construireCorpsCreationConteneurDepuisEtat(
   if (dns) {
     hostConfig.dns = dns;
   }
+  if (dnsSearch) {
+    hostConfig.dnsSearch = dnsSearch;
+  }
+  if (dnsOptions) {
+    hostConfig.dnsOptions = dnsOptions;
+  }
   if (extraHosts) {
     hostConfig.extraHosts = extraHosts;
+  }
+  const modeIpc = etat.modeIpc.trim();
+  if (modeIpc.length > 0) {
+    hostConfig.ipcMode = modeIpc;
+  }
+  const modePid = etat.modePid.trim();
+  if (modePid.length > 0) {
+    hostConfig.pidMode = modePid;
+  }
+  const modeUts = etat.modeUts.trim();
+  if (modeUts.length > 0) {
+    hostConfig.utsMode = modeUts;
+  }
+  const modeUserns = etat.modeUserns.trim();
+  if (modeUserns.length > 0) {
+    hostConfig.usernsMode = modeUserns;
+  }
+  if (etat.cgroupnsMode !== "") {
+    hostConfig.cgroupnsMode = etat.cgroupnsMode;
+  }
+  const runtime = etat.runtimeConteneur.trim();
+  if (runtime.length > 0) {
+    hostConfig.runtime = runtime;
+  }
+  const memoireReservee = etat.memoireReservationMegaOctets.trim();
+  if (memoireReservee.length > 0) {
+    const mega = Number(memoireReservee);
+    if (Number.isFinite(mega) && mega > 0) {
+      hostConfig.memoryReservationBytes = Math.round(mega * 1024 * 1024);
+    }
+  }
+  const memoireSwap = etat.memoireSwapMegaOctets.trim();
+  if (memoireSwap.length > 0) {
+    const megaSwap = Number(memoireSwap);
+    if (Number.isFinite(megaSwap)) {
+      if (megaSwap === -1) {
+        hostConfig.memorySwapBytes = -1;
+      } else if (megaSwap > 0) {
+        hostConfig.memorySwapBytes = Math.round(megaSwap * 1024 * 1024);
+      }
+    }
+  }
+  const swappinessTexte = etat.swappiness.trim();
+  if (swappinessTexte.length > 0) {
+    const sw = Number(swappinessTexte);
+    if (Number.isFinite(sw) && sw >= -1 && sw <= 100) {
+      hostConfig.memorySwappiness = sw;
+    }
+  }
+  if (etat.oomKillDesactive) {
+    hostConfig.oomKillDisable = true;
+  }
+  const oomAdj = etat.oomScoreAdj.trim();
+  if (oomAdj.length > 0) {
+    const adj = Number(oomAdj);
+    if (Number.isFinite(adj) && adj >= -1000 && adj <= 1000) {
+      hostConfig.oomScoreAdj = Math.round(adj);
+    }
+  }
+  const blkio = etat.blkioWeight.trim();
+  if (blkio.length > 0) {
+    const poids = Number(blkio);
+    if (Number.isFinite(poids) && poids >= 10 && poids <= 1000) {
+      hostConfig.blkioWeight = Math.round(poids);
+    }
+  }
+  const cgroupParent = etat.cgroupParent.trim();
+  if (cgroupParent.length > 0) {
+    hostConfig.cgroupParent = cgroupParent;
+  }
+  const piloteVolume = etat.piloteVolume.trim();
+  if (piloteVolume.length > 0) {
+    hostConfig.volumeDriver = piloteVolume;
+  }
+  const volumesFrom = lignesNonVides(etat.volumesFromLignes);
+  if (volumesFrom.length > 0) {
+    hostConfig.volumesFrom = volumesFrom;
+  }
+  const reglesCgroup = lignesNonVides(etat.deviceCgroupRulesLignes);
+  if (reglesCgroup.length > 0) {
+    hostConfig.deviceCgroupRules = reglesCgroup;
+  }
+  const consoleH = etat.consoleHauteur.trim();
+  const consoleL = etat.consoleLargeur.trim();
+  if (consoleH.length > 0 && consoleL.length > 0) {
+    const h = Number(consoleH);
+    const w = Number(consoleL);
+    if (Number.isFinite(h) && Number.isFinite(w) && h >= 0 && w >= 0) {
+      hostConfig.consoleSize = [Math.round(h), Math.round(w)];
+    }
   }
   if (capAdd) {
     hostConfig.capAdd = capAdd;

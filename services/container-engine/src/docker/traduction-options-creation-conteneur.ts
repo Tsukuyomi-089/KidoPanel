@@ -8,6 +8,7 @@ import type {
   Ulimit as DockerUlimit,
 } from "dockerode";
 import type { ContainerCreateSpec, ContainerHostConfig } from "../types.js";
+import { CLES_HOSTCONFIG_API_NORMALISEES } from "./cles-hostconfig-api-normalisees.js";
 
 /**
  * Forme du champ `NetworkingConfig` à la création (non exportée par les types dockerode
@@ -142,6 +143,20 @@ function healthcheckVersDocker(
   };
 }
 
+/** Recopie les paires clé/valeur de `hostConfig` absentes du dictionnaire métier (format Docker ou extensions). */
+function champsHoteSupplementairesVersDocker(
+  host: ContainerHostConfig,
+): Record<string, unknown> {
+  const brut = host as Record<string, unknown>;
+  const sortie: Record<string, unknown> = {};
+  for (const cle of Object.keys(brut)) {
+    if (!CLES_HOSTCONFIG_API_NORMALISEES.has(cle)) {
+      sortie[cle] = brut[cle];
+    }
+  }
+  return sortie;
+}
+
 /** Projette la configuration hôte métier sur un `HostConfig` Docker. */
 function hostConfigVersDocker(host: ContainerHostConfig | undefined): HostConfig | undefined {
   if (!host) {
@@ -154,7 +169,9 @@ function hostConfigVersDocker(host: ContainerHostConfig | undefined): HostConfig
       }
     : undefined;
 
-  return {
+  const supplement = champsHoteSupplementairesVersDocker(host);
+
+  const construit = {
     Memory: host.memoryBytes,
     NanoCpus: host.nanoCpus,
     PortBindings: liaisonsPortsVersDocker(host.portBindings),
@@ -167,6 +184,7 @@ function hostConfigVersDocker(host: ContainerHostConfig | undefined): HostConfig
     PublishAllPorts: host.publishAllPorts,
     Dns: host.dns,
     DnsSearch: host.dnsSearch,
+    DnsOptions: host.dnsOptions,
     ExtraHosts: host.extraHosts,
     CapAdd: host.capAdd,
     CapDrop: host.capDrop,
@@ -186,7 +204,27 @@ function hostConfigVersDocker(host: ContainerHostConfig | undefined): HostConfig
     StorageOpt: host.storageOpt,
     Devices: peripheriquesVersDocker(host.devices),
     LogConfig: logConfigDocker,
-  };
+    IpcMode: host.ipcMode,
+    PidMode: host.pidMode,
+    UTSMode: host.utsMode,
+    UsernsMode: host.usernsMode,
+    CgroupnsMode: host.cgroupnsMode,
+    Runtime: host.runtime,
+    Mounts: host.mounts,
+    MemoryReservation: host.memoryReservationBytes,
+    MemorySwap: host.memorySwapBytes,
+    MemorySwappiness: host.memorySwappiness,
+    OomKillDisable: host.oomKillDisable,
+    OomScoreAdj: host.oomScoreAdj,
+    BlkioWeight: host.blkioWeight,
+    CgroupParent: host.cgroupParent,
+    VolumeDriver: host.volumeDriver,
+    VolumesFrom: host.volumesFrom,
+    DeviceCgroupRules: host.deviceCgroupRules,
+    ConsoleSize: host.consoleSize,
+  } as HostConfig;
+
+  return { ...supplement, ...construit } as HostConfig;
 }
 
 /**
@@ -203,6 +241,7 @@ export function traduireOptionsCreationConteneur(
 
   return {
     name: spec.name,
+    platform: spec.platform,
     Image: spec.image,
     Cmd: spec.cmd,
     Entrypoint: spec.entrypoint,
@@ -212,6 +251,7 @@ export function traduireOptionsCreationConteneur(
     Domainname: spec.domainname,
     MacAddress: spec.macAddress,
     StopSignal: spec.stopSignal,
+    StopTimeout: spec.stopTimeout,
     Env: env,
     Labels: spec.labels,
     ExposedPorts: exposerPortsDepuisListe(spec.exposedPorts),
@@ -220,5 +260,13 @@ export function traduireOptionsCreationConteneur(
     Healthcheck: healthcheckVersDocker(spec.healthcheck),
     OpenStdin: spec.openStdin,
     Tty: spec.tty,
+    AttachStdin: spec.attachStdin,
+    AttachStdout: spec.attachStdout,
+    AttachStderr: spec.attachStderr,
+    StdinOnce: spec.stdinOnce,
+    NetworkDisabled: spec.networkDisabled,
+    Volumes: spec.volumes,
+    OnBuild: spec.onBuild,
+    Shell: spec.shell,
   } as ContainerCreateOptions;
 }

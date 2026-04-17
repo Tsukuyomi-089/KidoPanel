@@ -129,7 +129,7 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
       </details>
 
       <details style={{ marginBottom: 10 }}>
-        <summary>JSON avancé (healthcheck, réseau nommé, hostConfig)</summary>
+        <summary>JSON avancé (healthcheck, réseau nommé, hostConfig additionnel)</summary>
         <label style={styleLabelChampCreation}>
           Healthcheck (objet JSON, ex. test en secondes)
           <textarea
@@ -151,12 +151,13 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          HostConfig additionnel (objet JSON fusionné avec les champs ci-dessus)
+          HostConfig additionnel (JSON fusionné ; clés non reconnues transmises telles quelles au
+          moteur Docker, ex. <code>DeviceRequests</code> ou <code>BlkioDeviceReadBps</code>)
           <textarea
             value={etat.jsonHostConfigExtra}
             onChange={(e) => majEtat({ jsonHostConfigExtra: e.target.value })}
             rows={6}
-            placeholder='{"ulimits":[{"name":"nofile","soft":64000,"hard":64000}]}'
+            placeholder='{"Ulimits":[{"Name":"nofile","Soft":64000,"Hard":64000}]}'
             style={{ ...styleChampTexteCreation, minHeight: "6rem" }}
           />
         </label>

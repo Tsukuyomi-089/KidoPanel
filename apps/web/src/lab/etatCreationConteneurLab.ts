@@ -7,6 +7,36 @@ export type EtatCreationConteneurLab = {
   repertoireTravail: string;
   utilisateur: string;
   nomHote: string;
+  domaineConteneur: string;
+  adresseMac: string;
+  signalArret: string;
+  rechercheDns: string;
+  optionsDns: string;
+  modeIpc: string;
+  modePid: string;
+  modeUts: string;
+  modeUserns: string;
+  cgroupnsMode: "" | "private" | "host";
+  runtimeConteneur: string;
+  memoireReservationMegaOctets: string;
+  memoireSwapMegaOctets: string;
+  swappiness: string;
+  oomKillDesactive: boolean;
+  oomScoreAdj: string;
+  blkioWeight: string;
+  cgroupParent: string;
+  piloteVolume: string;
+  volumesFromLignes: string;
+  deviceCgroupRulesLignes: string;
+  consoleHauteur: string;
+  consoleLargeur: string;
+  platformeDocker: string;
+  delaiArretSecondes: string;
+  desactiverReseauConteneur: boolean;
+  attacherStdin: boolean;
+  attacherStdout: boolean;
+  attacherStderr: boolean;
+  stdinUneFois: boolean;
   politiqueRedemarrage: "" | "no" | "always" | "on-failure" | "unless-stopped";
   tentativesMaxOnFailure: string;
   modeReseau: string;
@@ -41,6 +71,36 @@ export function etatInitialCreationConteneurLab(): EtatCreationConteneurLab {
     repertoireTravail: "",
     utilisateur: "",
     nomHote: "",
+    domaineConteneur: "",
+    adresseMac: "",
+    signalArret: "",
+    rechercheDns: "",
+    optionsDns: "",
+    modeIpc: "",
+    modePid: "",
+    modeUts: "",
+    modeUserns: "",
+    cgroupnsMode: "",
+    runtimeConteneur: "",
+    memoireReservationMegaOctets: "",
+    memoireSwapMegaOctets: "",
+    swappiness: "",
+    oomKillDesactive: false,
+    oomScoreAdj: "",
+    blkioWeight: "",
+    cgroupParent: "",
+    piloteVolume: "",
+    volumesFromLignes: "",
+    deviceCgroupRulesLignes: "",
+    consoleHauteur: "",
+    consoleLargeur: "",
+    platformeDocker: "",
+    delaiArretSecondes: "",
+    desactiverReseauConteneur: false,
+    attacherStdin: false,
+    attacherStdout: false,
+    attacherStderr: false,
+    stdinUneFois: false,
     politiqueRedemarrage: "",
     tentativesMaxOnFailure: "0",
     modeReseau: "",

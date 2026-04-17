@@ -77,6 +77,30 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
             style={styleChampTexteCreation}
           />
         </label>
+        <label style={styleLabelChampCreation}>
+          Nom de domaine du conteneur (équivalent Portainer / API Docker)
+          <input
+            value={etat.domaineConteneur}
+            onChange={(e) => majEtat({ domaineConteneur: e.target.value })}
+            style={styleChampTexteCreation}
+          />
+        </label>
+        <label style={styleLabelChampCreation}>
+          Adresse MAC
+          <input
+            value={etat.adresseMac}
+            onChange={(e) => majEtat({ adresseMac: e.target.value })}
+            style={styleChampTexteCreation}
+          />
+        </label>
+        <label style={styleLabelChampCreation}>
+          Signal d’arrêt (ex. SIGTERM)
+          <input
+            value={etat.signalArret}
+            onChange={(e) => majEtat({ signalArret: e.target.value })}
+            style={styleChampTexteCreation}
+          />
+        </label>
       </details>
     </>
   );

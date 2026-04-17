@@ -30,6 +30,12 @@ export interface ConfigurationJournauxConteneur {
   config?: Record<string, string>;
 }
 
+/** Élément `Mounts` au format API Docker Engine (clés PascalCase). */
+export type MontageMoteurDocker = Record<string, unknown> & {
+  Type: string;
+  Target: string;
+};
+
 /** Paramètres du contrôle de santé (`Config.Healthcheck`). */
 export interface HealthcheckConteneur {
   test: string[];
@@ -71,6 +77,8 @@ export interface ContainerHostConfig {
   publishAllPorts?: boolean;
   dns?: string[];
   dnsSearch?: string[];
+  /** Options DNS brutes (`HostConfig.DnsOptions`). */
+  dnsOptions?: string[];
   extraHosts?: string[];
   capAdd?: string[];
   capDrop?: string[];
@@ -93,6 +101,42 @@ export interface ContainerHostConfig {
   storageOpt?: Record<string, string>;
   devices?: PeripheriqueConteneur[];
   logConfig?: ConfigurationJournauxConteneur;
+  /** Mode IPC (`HostConfig.IpcMode`). */
+  ipcMode?: string;
+  /** Espace de noms PID (`HostConfig.PidMode`). */
+  pidMode?: string;
+  /** Mode UTS (`HostConfig.UTSMode`). */
+  utsMode?: string;
+  /** Mode utilisateur (`HostConfig.UsernsMode`). */
+  usernsMode?: string;
+  /** Mode cgroup v2 (`HostConfig.CgroupnsMode`). */
+  cgroupnsMode?: "private" | "host";
+  /** Runtime OCI (`HostConfig.Runtime`). */
+  runtime?: string;
+  /** Montages structurés (`HostConfig.Mounts`). */
+  mounts?: MontageMoteurDocker[];
+  /** Mémoire réservée en octets (`HostConfig.MemoryReservation`). */
+  memoryReservationBytes?: number;
+  /** Limite mémoire + swap en octets (`HostConfig.MemorySwap`, -1 pour illimité côté moteur si transmis). */
+  memorySwapBytes?: number;
+  /** Agressivité du swap (`HostConfig.MemorySwappiness`, -1 pour défaut moteur). */
+  memorySwappiness?: number;
+  /** Désactive le tueur OOM (`HostConfig.OomKillDisable`). */
+  oomKillDisable?: boolean;
+  /** Ajustement de score OOM (`HostConfig.OomScoreAdj`). */
+  oomScoreAdj?: number;
+  /** Pondération blkio (`HostConfig.BlkioWeight`). */
+  blkioWeight?: number;
+  /** Groupe cgroup parent (`HostConfig.CgroupParent`). */
+  cgroupParent?: string;
+  /** Pilote de volume par défaut (`HostConfig.VolumeDriver`). */
+  volumeDriver?: string;
+  /** Conteneurs ou volumes source (`HostConfig.VolumesFrom`). */
+  volumesFrom?: string[];
+  /** Règles cgroup de périphériques (`HostConfig.DeviceCgroupRules`). */
+  deviceCgroupRules?: string[];
+  /** Taille console [hauteur, largeur] (`HostConfig.ConsoleSize`). */
+  consoleSize?: [number, number];
 }
 
 /**
@@ -128,6 +172,26 @@ export interface ContainerCreateSpec {
   openStdin?: boolean;
   /** Allouer un TTY (`Tty`). */
   tty?: boolean;
+  /** Attacher stdin au flux (`AttachStdin`). */
+  attachStdin?: boolean;
+  /** Attacher stdout au flux (`AttachStdout`). */
+  attachStdout?: boolean;
+  /** Attacher stderr au flux (`AttachStderr`). */
+  attachStderr?: boolean;
+  /** Fermer stdin après un seul client attaché (`StdinOnce`). */
+  stdinOnce?: boolean;
+  /** Plateforme cible (`platform` côté API de création). */
+  platform?: string;
+  /** Délai d’arrêt en secondes (`StopTimeout`). */
+  stopTimeout?: number;
+  /** Désactiver la pile réseau du conteneur (`NetworkDisabled`). */
+  networkDisabled?: boolean;
+  /** Points de montage déclaratifs hérités (`Volumes` dans la config de création). */
+  volumes?: Record<string, object>;
+  /** Instructions `ONBUILD` pour une image en construction (`OnBuild`). */
+  onBuild?: string[];
+  /** Interpréteur shell pour formes d’image (`Shell`). */
+  shell?: string[];
 }
 
 export type ContainerStatus =
