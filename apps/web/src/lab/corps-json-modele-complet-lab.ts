@@ -62,7 +62,7 @@ export function creerHostConfigJsonModeleComplet(): Record<string, unknown> {
  */
 export function creerCorpsJsonModeleComplet(): Record<string, unknown> {
   return {
-    image: "",
+    imageCatalogId: "",
     name: null,
     cmd: null,
     entrypoint: null,

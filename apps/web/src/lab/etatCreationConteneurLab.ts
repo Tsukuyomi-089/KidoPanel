@@ -1,6 +1,7 @@
 /** État du formulaire avancé de création de conteneur (laboratoire passerelle). */
 export type EtatCreationConteneurLab = {
-  image: string;
+  /** Identifiant catalogue KidoPanel (ex. nginx, postgres), jamais une référence Docker libre. */
+  imageCatalogId: string;
   nom: string;
   cmdLignes: string;
   entrypointLignes: string;
@@ -69,7 +70,7 @@ export type EtatCreationConteneurLab = {
 /** Valeurs initiales du formulaire de création (laboratoire). */
 export function etatInitialCreationConteneurLab(): EtatCreationConteneurLab {
   return {
-    image: "nginx:alpine",
+    imageCatalogId: "nginx",
     nom: "",
     cmdLignes: "",
     entrypointLignes: "",

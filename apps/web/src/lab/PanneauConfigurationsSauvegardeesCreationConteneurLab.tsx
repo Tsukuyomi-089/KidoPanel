@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { estIdentifiantCatalogueValide } from "@kidopanel/container-catalog";
 import {
   construireCorpsJsonConfigurationComplet,
   normaliserCorpsJsonVersConfigurationComplete,
@@ -125,9 +126,10 @@ export function PanneauConfigurationsSauvegardeesCreationConteneurLab({
       surErreur("Le corps JSON doit être un objet (pas un tableau ni une valeur simple).");
       return;
     }
-    if (typeof corps.image !== "string" || corps.image.trim().length === 0) {
+    const idCat = corps.imageCatalogId;
+    if (typeof idCat !== "string" || !estIdentifiantCatalogueValide(idCat.trim())) {
       surErreur(
-        "Le corps JSON doit contenir une clé « image » (chaîne non vide).",
+        "Le corps JSON doit contenir « imageCatalogId » avec un identifiant du catalogue officiel (ex. nginx, postgres).",
       );
       return;
     }

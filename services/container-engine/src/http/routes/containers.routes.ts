@@ -42,12 +42,17 @@ export function mountContainerRoutes(
     async (c) => {
       const spec = c.req.valid("json");
       try {
-        const result = await engine.createContainer(spec);
+        const result = await engine.createContainer(spec, {
+          requestId: c.get("requestId"),
+        });
         journaliserMoteur({
           niveau: "info",
           message: "conteneur_cree",
           requestId: c.get("requestId"),
-          metadata: { idConteneur: result.id },
+          metadata: {
+            idConteneur: result.id,
+            idCatalogue: spec.imageCatalogId,
+          },
         });
         return c.json(result, 201);
       } catch (err) {

@@ -290,6 +290,7 @@ export function InterfaceTestPasserelle() {
         surCreer={surCreer}
         surRemplirFormulaire={remplirFormulaireCreation}
         surErreurConfiguration={(msg) => setMessageErreur(msg)}
+        jetonSession={jeton}
       />
 
       <SectionJournauxSseLab

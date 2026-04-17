@@ -34,6 +34,8 @@ export function statusAndBodyForEngineError(
       return { status: 409, body };
     case "INVALID_SPEC":
       return { status: 400, body };
+    case "IMAGE_NON_AUTORISEE":
+      return { status: 400, body };
     case "OPERATION_FAILED":
     default:
       return { status: 500, body };

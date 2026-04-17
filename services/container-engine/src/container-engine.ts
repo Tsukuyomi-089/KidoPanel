@@ -8,17 +8,13 @@ import {
   type ContainerStatus,
   type ContainerSummary,
 } from "./types.js";
-import { ContainerEngineError } from "./errors.js";
+import { isContainerEngineError } from "./errors.js";
 import {
   createDockerClient,
   type DockerClient,
   type DockerConnectionOptions,
 } from "./docker-connection.js";
-import {
-  creerServiceImagesDocker,
-  executerTirageImageDocker,
-  type ServiceImagesDocker,
-} from "./docker/image.service.js";
+import { executerTirageImageDocker } from "./docker/image.service.js";
 import { wrapDockerError } from "./docker/wrap-docker-operation.js";
 import {
   lireJournauxConteneur,
@@ -26,6 +22,10 @@ import {
   type FluxSuiviJournaux,
 } from "./container-engine-logs.js";
 import { traduireOptionsCreationConteneur } from "./docker/traduction-options-creation-conteneur.js";
+import { creerServiceTirageImageCatalogue } from "./image-puller.service.js";
+import { validerImageCatalogueAvantCreation } from "./image-validator.service.js";
+import type { ServiceTirageImageCatalogue } from "./image-puller.service.js";
+import { journaliserMoteur } from "./observabilite/journal-json.js";
 
 /** Normalise l’état brut Docker vers le type `ContainerStatus` du domaine. */
 function mapDockerState(state: string | undefined): ContainerStatus {
@@ -75,11 +75,11 @@ export interface ContainerEngineOptions {
 
 /**
  * Façade sur Docker Engine : création, démarrage, arrêt, suppression, liste,
- * inspection, tirage d’image et lecture des journaux.
+ * inspection, tirage d’image catalogue et lecture des journaux.
  */
 export class ContainerEngine {
   private readonly docker: DockerClient;
-  private readonly serviceImages: ServiceImagesDocker;
+  private readonly serviceTirageCatalogue: ServiceTirageImageCatalogue;
 
   constructor(options?: ContainerEngineOptions) {
     if (options?.docker) {
@@ -87,7 +87,7 @@ export class ContainerEngine {
     } else {
       this.docker = createDockerClient(options?.connection);
     }
-    this.serviceImages = creerServiceImagesDocker(this.docker);
+    this.serviceTirageCatalogue = creerServiceTirageImageCatalogue(this.docker);
   }
 
   /** Indique si le démon répond au ping. */
@@ -118,24 +118,32 @@ export class ContainerEngine {
     }
   }
 
-  async createContainer(spec: ContainerCreateSpec): Promise<CreateContainerResult> {
-    if (!spec.image?.trim()) {
-      throw new ContainerEngineError(
-        "INVALID_SPEC",
-        "Une image de conteneur est obligatoire.",
-      );
-    }
+  /**
+   * Crée un conteneur : validation catalogue, tirage contrôlé si l’image manque localement,
+   * puis appel Docker avec la référence résolue.
+   */
+  async createContainer(
+    spec: ContainerCreateSpec,
+    options?: { requestId?: string },
+  ): Promise<CreateContainerResult> {
+    const requestId = options?.requestId;
+    const entree = validerImageCatalogueAvantCreation(spec.imageCatalogId, requestId);
+    await this.serviceTirageCatalogue.garantirImageCatalogueSurHote(entree, requestId);
 
-    const referenceImage = spec.image.trim();
-
-    const opts = traduireOptionsCreationConteneur({
-      ...spec,
-      image: referenceImage,
-    });
+    const opts = traduireOptionsCreationConteneur(spec, entree.referenceDocker);
 
     try {
-      await this.serviceImages.ensureImageAvailable(referenceImage);
       const container = await this.docker.createContainer(opts);
+      journaliserMoteur({
+        niveau: "info",
+        message: "creation_conteneur_catalogue_terminee",
+        requestId,
+        metadata: {
+          idConteneur: container.id,
+          idCatalogue: entree.id,
+          referenceDocker: entree.referenceDocker,
+        },
+      });
       return {
         id: container.id,
         warnings: [],
@@ -173,16 +181,51 @@ export class ContainerEngine {
   }
 
   /**
-   * Tire une référence d’image (ex. `nginx:alpine`). La promesse se résout quand le tirage est terminé.
+   * Force le tirage d’une image catalogue depuis le registre (même si une couche locale existe).
    */
-  async pullImage(imageRef: string): Promise<void> {
-    if (!imageRef?.trim()) {
-      throw new ContainerEngineError(
-        "INVALID_SPEC",
-        "Une référence d’image est obligatoire.",
-      );
+  async pullImage(
+    imageCatalogId: string,
+    options?: { requestId?: string },
+  ): Promise<void> {
+    const entree = validerImageCatalogueAvantCreation(imageCatalogId, options?.requestId);
+    const requestId = options?.requestId;
+    const ref = entree.referenceDocker;
+    journaliserMoteur({
+      niveau: "info",
+      message: "image_pull_start",
+      requestId,
+      metadata: {
+        idCatalogue: entree.id,
+        referenceDocker: ref,
+        mode: "pull_force",
+      },
+    });
+    try {
+      await executerTirageImageDocker(this.docker, ref);
+    } catch (err) {
+      journaliserMoteur({
+        niveau: "error",
+        message: "image_pull_failed",
+        requestId,
+        metadata: {
+          idCatalogue: entree.id,
+          referenceDocker: ref,
+          codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+          mode: "pull_force",
+        },
+      });
+      throw err;
     }
-    await executerTirageImageDocker(this.docker, imageRef.trim());
+    journaliserMoteur({
+      niveau: "info",
+      message: "image_pull_success",
+      requestId,
+      metadata: {
+        idCatalogue: entree.id,
+        referenceDocker: ref,
+        mode: "pull_force",
+      },
+    });
   }
 
   /**

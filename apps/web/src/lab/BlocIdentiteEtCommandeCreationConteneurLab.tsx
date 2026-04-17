@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import type { ImageCatalogueApi } from "@kidopanel/container-catalog";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
   AIDE_ADRESSE_MAC,
@@ -11,6 +13,7 @@ import {
   AIDE_SIGNAL_ARRET,
   AIDE_UTILISATEUR_PROCESSUS,
 } from "./definitionsAidesCreationConteneurLab.js";
+import { appelerPasserelle } from "./passerelleClient.js";
 import {
   styleChampTexteCreation,
   styleLabelChampCreation,
@@ -21,23 +24,151 @@ import { TexteAideChampCreationConteneurLab } from "./TexteAideChampCreationCont
 type Props = {
   etat: EtatCreationConteneurLab;
   majEtat: (partiel: Partial<EtatCreationConteneurLab>) => void;
+  /** Jeton JWT courant : sans jeton, le catalogue `GET /images` n’est pas chargé. */
+  jetonSession: string;
 };
 
-/** Identité de l’image, nom du conteneur, commande, entrypoint et identité processus. */
+/** Libellé court pour l’affichage de la catégorie métier dans le lab. */
+function libelleCategorie(categorie: ImageCatalogueApi["categorie"]): string {
+  switch (categorie) {
+    case "web":
+      return "Web";
+    case "db":
+      return "Base de données";
+    case "runtime":
+      return "Runtime";
+    case "utilitaire":
+      return "Utilitaire";
+    default:
+      return categorie;
+  }
+}
+
+/** Identité catalogue, nom du conteneur, commande, entrypoint et identité processus. */
 export function BlocIdentiteEtCommandeCreationConteneurLab({
   etat,
   majEtat,
+  jetonSession,
 }: Props) {
+  const [imagesCatalogue, setImagesCatalogue] = useState<ImageCatalogueApi[]>(
+    [],
+  );
+  const [chargementCatalogue, setChargementCatalogue] = useState(false);
+  const [erreurCatalogue, setErreurCatalogue] = useState<string | null>(null);
+
+  useEffect(() => {
+    let annule = false;
+    if (jetonSession.trim() === "") {
+      setImagesCatalogue([]);
+      setErreurCatalogue(null);
+      setChargementCatalogue(false);
+      return () => {
+        annule = true;
+      };
+    }
+    setChargementCatalogue(true);
+    setErreurCatalogue(null);
+    void (async () => {
+      const reponse = await appelerPasserelle("/images", {
+        method: "GET",
+        jetonBearer: jetonSession,
+      });
+      if (annule) {
+        return;
+      }
+      if (!reponse.ok) {
+        setImagesCatalogue([]);
+        setErreurCatalogue(
+          `Impossible de charger le catalogue d’images (HTTP ${reponse.status}).`,
+        );
+        setChargementCatalogue(false);
+        return;
+      }
+      try {
+        const donnees = (await reponse.json()) as { images?: ImageCatalogueApi[] };
+        const liste = Array.isArray(donnees.images) ? donnees.images : [];
+        setImagesCatalogue(liste);
+        setErreurCatalogue(null);
+      } catch {
+        setImagesCatalogue([]);
+        setErreurCatalogue("Réponse catalogue d’images invalide (JSON).");
+      } finally {
+        if (!annule) {
+          setChargementCatalogue(false);
+        }
+      }
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [jetonSession]);
+
+  const selection = imagesCatalogue.find((x) => x.id === etat.imageCatalogId);
+
   return (
     <>
       <label style={styleLabelChampCreation}>
-        <span style={styleTitreChampCreation}>Image Docker (obligatoire)</span>
+        <span style={styleTitreChampCreation}>Image catalogue (obligatoire)</span>
         <TexteAideChampCreationConteneurLab texte={AIDE_IMAGE_REFERENCE} />
-        <input
-          value={etat.image}
-          onChange={(e) => majEtat({ image: e.target.value })}
+        <select
+          value={
+            imagesCatalogue.some((x) => x.id === etat.imageCatalogId)
+              ? etat.imageCatalogId
+              : ""
+          }
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v !== "") {
+              majEtat({ imageCatalogId: v });
+            }
+          }}
+          disabled={
+            chargementCatalogue ||
+            jetonSession.trim() === "" ||
+            imagesCatalogue.length === 0
+          }
           style={styleChampTexteCreation}
-        />
+        >
+          {jetonSession.trim() === "" ? (
+            <option value="">Connexion requise pour lister les images</option>
+          ) : chargementCatalogue ? (
+            <option value="">Chargement du catalogue…</option>
+          ) : imagesCatalogue.length === 0 ? (
+            <option value="">Aucune image catalogue (vérifiez la connexion)</option>
+          ) : (
+            imagesCatalogue.map((img) => (
+              <option key={img.id} value={img.id}>
+                {img.id} — {img.referenceDocker}
+              </option>
+            ))
+          )}
+        </select>
+        {erreurCatalogue !== null ? (
+          <p style={{ fontSize: "0.85rem", color: "#b00020", marginTop: 6 }}>
+            {erreurCatalogue}
+          </p>
+        ) : null}
+        {selection !== undefined ? (
+          <div
+            style={{
+              marginTop: 8,
+              fontSize: "0.88rem",
+              opacity: 0.92,
+              lineHeight: 1.45,
+            }}
+          >
+            <div>
+              <strong>Catégorie :</strong> {libelleCategorie(selection.categorie)}
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <strong>Description :</strong> {selection.description}
+            </div>
+            <div style={{ marginTop: 4 }}>
+              <strong>Référence Docker résolue :</strong>{" "}
+              <code>{selection.referenceDocker}</code>
+            </div>
+          </div>
+        ) : null}
       </label>
       <label style={styleLabelChampCreation}>
         <span style={styleTitreChampCreation}>Nom du conteneur sur l’hôte</span>

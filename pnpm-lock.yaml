@@ -23,6 +23,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.6
         version: 0.7.6(hono@4.12.12)(zod@4.3.6)
+      '@kidopanel/container-catalog':
+        specifier: workspace:*
+        version: link:../../packages/container-catalog
       '@kidopanel/database':
         specifier: workspace:*
         version: link:../../packages/database
@@ -54,6 +57,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@kidopanel/container-catalog':
+        specifier: workspace:*
+        version: link:../../packages/container-catalog
       react:
         specifier: ^19.2.4
         version: 19.2.5
@@ -140,6 +146,9 @@ importers:
       '@hono/zod-validator':
         specifier: ^0.7.6
         version: 0.7.6(hono@4.12.12)(zod@4.3.6)
+      '@kidopanel/container-catalog':
+        specifier: workspace:*
+        version: link:../../packages/container-catalog
       dockerode:
         specifier: ^4.0.9
         version: 4.0.10

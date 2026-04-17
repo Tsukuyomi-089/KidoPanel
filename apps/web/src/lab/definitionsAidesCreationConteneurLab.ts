@@ -6,7 +6,7 @@
 export const AIDE_CREATION_CONTENEUR_ENTETE = `Création = enregistrement d’une configuration sur le moteur Docker ; le conteneur n’est « en cours » qu’après un démarrage explicite (bouton Démarrer dans le lab). Un processus principal qui se termine tout de suite laisse le conteneur arrêté avec code 0 : ce n’est pas un plantage du panel. Exemple fréquent : image debian avec commande bash sans TTY ni stdin ouverte — le shell se ferme aussitôt (Exited 0). Pour un shell interactif, cochez « Allouer un TTY » et « Ouvrir stdin », ou mettez dans Cmd une ligne du type sleep infinity pour tester. Pour un service réel, utilisez plutôt une image dont la commande par défaut reste active (nginx, postgres, etc.).`;
 
 export const AIDE_IMAGE_REFERENCE =
-  "Nom d’image à utiliser, tel que Docker le résout (dépôt + tag, ex. nginx:alpine). Le moteur tire l’image depuis un registre si elle est absente localement.";
+  "Identifiant d’une image du catalogue KidoPanel (liste imposée par la plateforme). La référence Docker exacte et le tirage depuis le registre sont gérés uniquement côté moteur après validation.";
 
 export const AIDE_NOM_CONTENEUR =
   "Nom lisible du conteneur côté Docker (docker ps, scripts). Optionnel : sans nom, Docker attribue un nom aléatoire. Caractères autorisés limités par le moteur.";

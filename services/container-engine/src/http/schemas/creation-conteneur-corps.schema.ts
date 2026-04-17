@@ -1,3 +1,4 @@
+import { IDENTIFIANTS_IMAGES_CATALOGUE } from "@kidopanel/container-catalog";
 import { z } from "zod";
 
 /** Schéma d’une liaison hôte pour un port conteneur (ex. `80/tcp`). */
@@ -130,7 +131,7 @@ const hostConfigCorpsSchema = z
 /** Corps JSON pour `POST /containers` (création), aligné sur `ContainerCreateSpec`. */
 export const createContainerJsonSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  image: z.string().min(1),
+  imageCatalogId: z.enum(IDENTIFIANTS_IMAGES_CATALOGUE),
   cmd: z.array(z.string()).max(512).optional(),
   entrypoint: z.array(z.string()).max(64).optional(),
   workingDir: z.string().max(4096).optional(),

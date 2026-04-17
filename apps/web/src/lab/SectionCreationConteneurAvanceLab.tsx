@@ -16,15 +16,18 @@ type Props = {
   surCreer: () => void;
   surRemplirFormulaire: (nouvelEtat: EtatCreationConteneurLab) => void;
   surErreurConfiguration: (message: string) => void;
+  /** Jeton JWT pour charger le catalogue `GET /images` côté formulaire. */
+  jetonSession: string;
 };
 
-/** Formulaire avancé de création (image, commande, réseau, ressources, JSON santé / réseau / host). */
+/** Formulaire avancé de création (image catalogue, commande, réseau, ressources, JSON santé / réseau / host). */
 export function SectionCreationConteneurAvanceLab({
   etat,
   majEtat,
   surCreer,
   surRemplirFormulaire,
   surErreurConfiguration,
+  jetonSession,
 }: Props) {
   return (
     <section style={styleBlocLab}>
@@ -51,7 +54,11 @@ export function SectionCreationConteneurAvanceLab({
       />
       <BlocJsonCorpsSupplementaireCreationConteneurLab etat={etat} majEtat={majEtat} />
 
-      <BlocIdentiteEtCommandeCreationConteneurLab etat={etat} majEtat={majEtat} />
+      <BlocIdentiteEtCommandeCreationConteneurLab
+        etat={etat}
+        majEtat={majEtat}
+        jetonSession={jetonSession}
+      />
       <BlocOptionsMoteurDockerCreationConteneurLab etat={etat} majEtat={majEtat} />
       <BlocReseauEtEnvironnementCreationConteneurLab etat={etat} majEtat={majEtat} />
       <BlocHoteRuntimeEtMemoireCreationConteneurLab etat={etat} majEtat={majEtat} />

@@ -1,10 +1,13 @@
 import {
+  trouverIdCatalogueDepuisReferenceDocker,
+} from "@kidopanel/container-catalog";
+import {
   etatInitialCreationConteneurLab,
   type EtatCreationConteneurLab,
 } from "./etatCreationConteneurLab.js";
 
 const CLES_CORPS_PREMIER_NIVEAU_FORMULAIRE = new Set([
-  "image",
+  "imageCatalogId",
   "name",
   "cmd",
   "entrypoint",
@@ -133,17 +136,29 @@ export function etatDepuisCorpsCreationConteneurLab(
     throw new Error("La configuration doit rester un objet après nettoyage des valeurs nulles.");
   }
   const c = nettoye as Record<string, unknown>;
-  const imageBrut = c.image;
-  if (typeof imageBrut !== "string" || imageBrut.trim().length === 0) {
+  const idCatalogueBrut = c.imageCatalogId;
+  const imageLegacy = c.image;
+  let idCatalogue: string;
+  if (typeof idCatalogueBrut === "string" && idCatalogueBrut.trim().length > 0) {
+    idCatalogue = idCatalogueBrut.trim();
+  } else if (typeof imageLegacy === "string" && imageLegacy.trim().length > 0) {
+    const depuisRef = trouverIdCatalogueDepuisReferenceDocker(imageLegacy);
+    if (depuisRef === undefined) {
+      throw new Error(
+        "Le JSON doit contenir « imageCatalogId » (identifiant catalogue). L’ancienne clé « image » n’est acceptée que si elle correspond exactement à une référence du catalogue officiel.",
+      );
+    }
+    idCatalogue = depuisRef;
+  } else {
     throw new Error(
-      "Le champ « image » est obligatoire dans le JSON (référence d’image Docker).",
+      "Le champ « imageCatalogId » est obligatoire dans le JSON (identifiant catalogue KidoPanel).",
     );
   }
 
   const base = etatInitialCreationConteneurLab();
   const etat: EtatCreationConteneurLab = {
     ...base,
-    image: imageBrut.trim(),
+    imageCatalogId: idCatalogue,
   };
 
   const supplementTop: Record<string, unknown> = {};

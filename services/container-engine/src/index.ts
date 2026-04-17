@@ -21,3 +21,4 @@ export type {
   CreateContainerResult,
   PortBinding,
 } from "./types.js";
+export type { ImageCatalogId } from "@kidopanel/container-catalog";

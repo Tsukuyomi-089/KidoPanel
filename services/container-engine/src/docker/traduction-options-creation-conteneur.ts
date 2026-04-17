@@ -229,9 +229,11 @@ function hostConfigVersDocker(host: ContainerHostConfig | undefined): HostConfig
 
 /**
  * Traduit la spécification métier en options attendues par dockerode pour `createContainer`.
+ * @param referenceImageDocker Référence Docker déjà validée et résolue depuis le catalogue (champ `Image`).
  */
 export function traduireOptionsCreationConteneur(
   spec: ContainerCreateSpec,
+  referenceImageDocker: string,
 ): ContainerCreateOptions {
   const env = spec.env
     ? Object.entries(spec.env).map(([cle, valeur]) => `${cle}=${valeur}`)
@@ -242,7 +244,7 @@ export function traduireOptionsCreationConteneur(
   return {
     name: spec.name,
     platform: spec.platform,
-    Image: spec.image,
+    Image: referenceImageDocker,
     Cmd: spec.cmd,
     Entrypoint: spec.entrypoint,
     WorkingDir: spec.workingDir,

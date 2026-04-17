@@ -39,7 +39,7 @@ export async function creerConteneurViaPasserelle(
       "Content-Type": "application/json",
       Authorization: `Bearer ${jeton}`,
     },
-    body: JSON.stringify({ image: "alpine:3.19" }),
+    body: JSON.stringify({ imageCatalogId: "nginx" }),
   });
   expect(reponse.status).toBe(201);
   const corps = (await reponse.json()) as { id: string };

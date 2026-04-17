@@ -3,6 +3,7 @@ export type ContainerEngineErrorCode =
   | "DOCKER_UNAVAILABLE"
   | "IMAGE_NOT_FOUND"
   | "IMAGE_PULL_FAILED"
+  | "IMAGE_NON_AUTORISEE"
   | "NOT_FOUND"
   | "CONFLICT"
   | "INVALID_SPEC"

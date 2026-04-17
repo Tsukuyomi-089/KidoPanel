@@ -102,9 +102,9 @@ function fusionObjetsEnregistrements(
 export function construireCorpsCreationConteneurDepuisEtat(
   etat: EtatCreationConteneurLab,
 ): Record<string, unknown> {
-  const image = etat.image.trim();
-  if (image.length === 0) {
-    throw new Error("L’image est obligatoire.");
+  const idCatalogue = etat.imageCatalogId.trim();
+  if (idCatalogue.length === 0) {
+    throw new Error("L’identifiant d’image catalogue est obligatoire.");
   }
   const corps: Record<string, unknown> = {};
   const supplementTop = etat.jsonCorpsSupplementaireTop.trim();
@@ -125,7 +125,9 @@ export function construireCorpsCreationConteneurDepuisEtat(
       Object.assign(corps, parseTop as Record<string, unknown>);
     }
   }
-  corps.image = image;
+  delete corps.image;
+  delete corps.imageCatalogId;
+  corps.imageCatalogId = idCatalogue;
   const nom = etat.nom.trim();
   if (nom.length > 0) {
     corps.name = nom;

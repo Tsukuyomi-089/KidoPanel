@@ -1,6 +1,5 @@
 import type { DockerClient } from "../docker-connection.js";
 import { ContainerEngineError } from "../errors.js";
-import { wrapDockerError } from "./wrap-docker-operation.js";
 
 /** Détecte une erreur système Node portant un code `errno`. */
 function estErreurErrno(err: unknown): err is NodeJS.ErrnoException {
@@ -88,38 +87,3 @@ export async function executerTirageImageDocker(
   }
 }
 
-/** Contrat du service : garantir la disponibilité locale d’une référence d’image. */
-export interface ServiceImagesDocker {
-  ensureImageAvailable(image: string): Promise<void>;
-}
-
-/**
- * Fabrique un service qui vérifie la présence locale de l’image et déclenche un tirage si nécessaire.
- */
-export function creerServiceImagesDocker(
-  docker: DockerClient,
-): ServiceImagesDocker {
-  return {
-    async ensureImageAvailable(image: string): Promise<void> {
-      const ref = image.trim();
-      if (!ref) {
-        throw new ContainerEngineError(
-          "INVALID_SPEC",
-          "Une image de conteneur est obligatoire.",
-        );
-      }
-      try {
-        await docker.getImage(ref).inspect();
-      } catch (e) {
-        const connexion = erreurConnexionDockerSiApplicable(e);
-        if (connexion) throw connexion;
-        const sc = statutHttpDocker(e);
-        if (sc === 404) {
-          await executerTirageImageDocker(docker, ref);
-          return;
-        }
-        wrapDockerError(e);
-      }
-    },
-  };
-}

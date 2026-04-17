@@ -1,3 +1,5 @@
+import type { ImageCatalogId } from "@kidopanel/container-catalog";
+
 /** Liaison du port hôte vers un port conteneur (ex. `"80/tcp"`). */
 export interface PortBinding {
   hostIp?: string;
@@ -145,8 +147,8 @@ export interface ContainerHostConfig {
 export interface ContainerCreateSpec {
   /** Nom du conteneur (paramètre de requête Docker `name`). */
   name?: string;
-  /** Référence d’image, ex. `nginx:alpine`. */
-  image: string;
+  /** Identifiant d’image dans le catalogue officiel KidoPanel (résolu en référence Docker côté moteur). */
+  imageCatalogId: ImageCatalogId;
   /** Arguments du processus principal (`Cmd`). */
   cmd?: string[];
   /** Point d’entrée (`Entrypoint`). */

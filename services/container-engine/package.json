@@ -23,6 +23,7 @@
     "start": "node dist/main.js"
   },
   "dependencies": {
+    "@kidopanel/container-catalog": "workspace:*",
     "@hono/node-server": "^1.19.13",
     "@hono/zod-validator": "^0.7.6",
     "dockerode": "^4.0.9",
