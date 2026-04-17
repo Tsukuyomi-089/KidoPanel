@@ -102,6 +102,9 @@ export function SectionAuthLab({
             type="password"
             value={jeton}
             onChange={(e) => setJeton(e.target.value)}
+            onBlur={() => {
+              enregistrerJetonStockage(jeton);
+            }}
             autoComplete="off"
             style={{ display: "block", width: "100%", marginTop: 4 }}
           />

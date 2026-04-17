@@ -53,10 +53,6 @@ export function InterfaceTestPasserelle() {
   const refUrlContexteErreur = useRef<string>(composerUrlPasserelle("/containers"));
 
   useEffect(() => {
-    enregistrerJetonStockage(jeton);
-  }, [jeton]);
-
-  useEffect(() => {
     let annule = false;
     void (async () => {
       setEtatSondePasserelle("en_cours");
@@ -133,6 +129,7 @@ export function InterfaceTestPasserelle() {
       const donnees = (await reponse.json()) as { token?: string };
       if (typeof donnees.token === "string") {
         setJeton(donnees.token);
+        enregistrerJetonStockage(donnees.token);
       }
     } catch (e) {
       setMessageErreur(
@@ -163,6 +160,7 @@ export function InterfaceTestPasserelle() {
       const donnees = (await reponse.json()) as { token?: string };
       if (typeof donnees.token === "string") {
         setJeton(donnees.token);
+        enregistrerJetonStockage(donnees.token);
       }
     } catch (e) {
       setMessageErreur(

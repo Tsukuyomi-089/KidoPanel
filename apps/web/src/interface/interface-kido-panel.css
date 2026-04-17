@@ -1,0 +1,217 @@
+.racine-kidopanel {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  border-inline: none;
+  text-align: initial;
+  box-sizing: border-box;
+}
+
+.fond-app-kido {
+  min-height: 100svh;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(170, 59, 255, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(59, 130, 246, 0.1), transparent 50%),
+    var(--bg);
+}
+
+.grille-centre-auth {
+  display: grid;
+  min-height: 100svh;
+  place-items: center;
+  padding: clamp(1rem, 4vw, 2.5rem);
+}
+
+.carte-auth-kido {
+  width: min(440px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+
+.marque-kido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+}
+
+.marque-kido__titre {
+  font-size: 1.35rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+  margin: 0;
+}
+
+.marque-kido__sous {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.onglets-auth {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.onglets-auth button {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.55rem 0.65rem;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.onglets-auth button[aria-selected="true"] {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.form-auth-kido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.champ-auth-kido label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-h);
+}
+
+.champ-auth-kido input[type="email"],
+.champ-auth-kido input[type="password"],
+.champ-auth-kido input[type="text"] {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  color: var(--text-h);
+  background: var(--bg);
+}
+
+.champ-auth-kido input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ligne-souvenir {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.bouton-principal-kido {
+  border: none;
+  border-radius: 11px;
+  padding: 0.7rem 0.9rem;
+  font-weight: 600;
+  font: inherit;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+}
+
+.bouton-principal-kido:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bandeau-erreur-auth {
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #ef4444 45%, var(--border));
+  background: color-mix(in srgb, #ef4444 12%, transparent);
+  color: var(--text-h);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+
+.encadre-securite {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+
+.encadre-securite ul {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.barre-app-kido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem clamp(1rem, 3vw, 1.5rem);
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.barre-app-kido__marque {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.barre-app-kido__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.bouton-secondaire-kido {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.75rem;
+  background: transparent;
+  color: var(--text-h);
+  font: inherit;
+  cursor: pointer;
+}
+
+.bouton-secondaire-kido:focus-visible,
+.bouton-principal-kido:focus-visible,
+.onglets-auth button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.zone-principale-app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.carte-tableau-bord {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+}
+
+.carte-tableau-bord h2 {
+  margin-top: 0;
+}
