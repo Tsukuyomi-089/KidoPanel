@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { chargerLignesHistoriqueJournauxConteneur } from "./flux-journaux-conteneur.charger-historique.js";
+import { extraireEvenementsSseDepuisTampon } from "./flux-journaux-conteneur.parser-sse.js";
 import { formaterErreurPourAffichagePanel } from "../lab/passerelleErreursAffichageLab.js";
 
 export type OptionsFluxJournauxConteneur = {
@@ -9,41 +11,14 @@ export type OptionsFluxJournauxConteneur = {
   tailEntrees?: number;
   horodatageDocker?: boolean;
   lignesMaxAffichage?: number;
+  /**
+   * Avant le premier SSE de la session : même `GET /containers/:id/logs` que Portainer
+   * pour afficher les dernières lignes puis le flux (reconnexion réseau ne recharge pas l’historique).
+   */
+  chargementHistoriqueInitial?: boolean;
 };
 
 type EtatConnexion = "inactif" | "connecte" | "reconnexion" | "erreur";
-
-type EvenementSseParse = {
-  typeEvenement?: string;
-  donnees: string;
-};
-
-function extraireEvenementsSse(tampon: string): {
-  tamponRestant: string;
-  evenements: EvenementSseParse[];
-} {
-  const evenements: EvenementSseParse[] = [];
-  const paquets = tampon.split(/\r?\n\r?\n/);
-  const tamponRestant = paquets.pop() ?? "";
-  for (const paquet of paquets) {
-    let typeEvenement: string | undefined;
-    const lignesData: string[] = [];
-    for (const ligne of paquet.split(/\r?\n/)) {
-      if (ligne.startsWith("event:")) {
-        typeEvenement = ligne.slice(6).trim();
-      } else if (ligne.startsWith("data:")) {
-        lignesData.push(ligne.slice(5).trimStart());
-      }
-    }
-    if (lignesData.length > 0) {
-      evenements.push({
-        typeEvenement,
-        donnees: lignesData.join("\n"),
-      });
-    }
-  }
-  return { tamponRestant, evenements };
-}
 
 function delaiReconnexionMs(tentative: number): number {
   const base = 1000 * 2 ** Math.min(tentative, 5);
@@ -69,6 +44,7 @@ export function useFluxJournauxConteneur(
     tailEntrees,
     horodatageDocker,
     lignesMaxAffichage = 5000,
+    chargementHistoriqueInitial,
   } = options;
 
   const [lignes, setLignes] = useState<string[]>([]);
@@ -77,6 +53,7 @@ export function useFluxJournauxConteneur(
     null,
   );
   const refTentatives = useRef(0);
+  const refHistoriqueInitialCharge = useRef(false);
 
   const effacer = useCallback(() => {
     setLignes([]);
@@ -85,6 +62,7 @@ export function useFluxJournauxConteneur(
   useEffect(() => {
     if (!actif || !jetonBearer.trim() || !idConteneur.trim()) {
       setEtatConnexion("inactif");
+      refHistoriqueInitialCharge.current = false;
       return;
     }
 
@@ -112,6 +90,26 @@ export function useFluxJournauxConteneur(
       controleurAnnulation = new AbortController();
 
       const base = urlBasePasserelle.replace(/\/$/, "");
+      const doitInjecterHistorique =
+        (chargementHistoriqueInitial ?? true) &&
+        !refHistoriqueInitialCharge.current;
+      if (doitInjecterHistorique) {
+        refHistoriqueInitialCharge.current = true;
+        try {
+          const morceaux = await chargerLignesHistoriqueJournauxConteneur({
+            urlBasePasserelle,
+            idConteneur,
+            jetonBearer,
+            tailEntrees,
+            horodatageDocker,
+            signal: controleurAnnulation.signal,
+          });
+          setLignes(morceaux);
+        } catch {
+          setLignes([]);
+        }
+      }
+
       const url = new URL(
         `${base}/containers/${encodeURIComponent(idConteneur)}/logs/stream`,
       );
@@ -187,7 +185,8 @@ export function useFluxJournauxConteneur(
             break;
           }
           tamponSse += decodeur.decode(value, { stream: true });
-          const { tamponRestant, evenements } = extraireEvenementsSse(tamponSse);
+          const { tamponRestant, evenements } =
+            extraireEvenementsSseDepuisTampon(tamponSse);
           tamponSse = tamponRestant;
 
           for (const ev of evenements) {
@@ -256,6 +255,7 @@ export function useFluxJournauxConteneur(
         clearTimeout(idTemporisation);
       }
       refTentatives.current = 0;
+      refHistoriqueInitialCharge.current = false;
     };
   }, [
     actif,
@@ -265,6 +265,7 @@ export function useFluxJournauxConteneur(
     tailEntrees,
     horodatageDocker,
     lignesMaxAffichage,
+    chargementHistoriqueInitial,
   ]);
 
   return { lignes, etatConnexion, dernierMessageErreur, effacer };
