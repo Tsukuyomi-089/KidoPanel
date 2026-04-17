@@ -15,7 +15,10 @@ import {
   type DockerConnectionOptions,
 } from "./docker-connection.js";
 import { executerTirageImageDocker } from "./docker/image.service.js";
-import { wrapDockerError } from "./docker/wrap-docker-operation.js";
+import {
+  estErreurArretConteneurDejaArrete,
+  wrapDockerError,
+} from "./docker/wrap-docker-operation.js";
 import {
   lireJournauxConteneur,
   ouvrirFluxSuiviJournaux,
@@ -167,6 +170,9 @@ export class ContainerEngine {
       const container = this.docker.getContainer(id);
       await container.stop({ t: timeoutSeconds });
     } catch (e) {
+      if (estErreurArretConteneurDejaArrete(e)) {
+        return;
+      }
       wrapDockerError(e);
     }
   }
