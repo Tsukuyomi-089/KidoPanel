@@ -3,8 +3,10 @@ import { BlocHoteRuntimeEtMemoireCreationConteneurLab } from "./BlocHoteRuntimeE
 import { BlocOptionsMoteurDockerCreationConteneurLab } from "./BlocOptionsMoteurDockerCreationConteneurLab.js";
 import { BlocReseauEtEnvironnementCreationConteneurLab } from "./BlocReseauEtEnvironnementCreationConteneurLab.js";
 import { BlocSecuriteRessourcesEtJsonCreationConteneurLab } from "./BlocSecuriteRessourcesEtJsonCreationConteneurLab.js";
+import { AIDE_CREATION_CONTENEUR_ENTETE } from "./definitionsAidesCreationConteneurLab.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import { styleBlocLab } from "./stylesCommunsLab.js";
+import { TexteAideChampCreationConteneurLab } from "./TexteAideChampCreationConteneurLab.js";
 
 type Props = {
   etat: EtatCreationConteneurLab;
@@ -21,16 +23,19 @@ export function SectionCreationConteneurAvanceLab({
   return (
     <section style={styleBlocLab}>
       <h2 style={{ fontSize: "1rem", marginTop: 0 }}>
-        Créer un conteneur (paramétrage type Portainer)
+        Créer un conteneur (aide par champ)
       </h2>
+      <details open style={{ marginBottom: 12 }}>
+        <summary style={{ cursor: "pointer", fontWeight: 600 }}>
+          Lire avant de remplir : création, démarrage, conteneur qui s’arrête tout de suite
+        </summary>
+        <TexteAideChampCreationConteneurLab texte={AIDE_CREATION_CONTENEUR_ENTETE} />
+      </details>
       <p style={{ fontSize: "0.88rem", opacity: 0.88, marginTop: 0 }}>
-        Les champs structurés reprennent les options usuelles de Portainer (image, commande, réseau,
-        ressources, runtime). Le moteur accepte en outre dans <code>hostConfig</code> toute clé
-        supplémentaire au format de l’API Docker (souvent en tête PascalCase), comme le ferait le
-        proxy <code>/docker/…</code> de Portainer. Liaisons de ports : une ligne{" "}
-        <code>80/tcp=8080</code> ou <code>80/tcp=127.0.0.1:8080</code> ; variables et étiquettes en{" "}
-        <code>CLE=VALEUR</code> par ligne. Les blocs JSON (santé, réseau nommé, hostConfig) sont
-        fusionnés après validation.
+        Chaque champ ci-dessous comporte un titre lisible et un court texte d’explication. Les noms entre
+        parenthèses renvoient aux champs de l’API Docker lorsqu’ils aident à croiser la documentation
+        officielle ou Portainer. Le JSON « hostConfig additionnel » accepte les mêmes clés que le moteur
+        Docker (souvent en tête PascalCase).
       </p>
 
       <BlocIdentiteEtCommandeCreationConteneurLab etat={etat} majEtat={majEtat} />

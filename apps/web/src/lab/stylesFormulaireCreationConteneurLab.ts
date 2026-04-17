@@ -15,3 +15,22 @@ export const styleChampTexteCreation: CSSProperties = {
   fontFamily: "ui-monospace, monospace",
   fontSize: "0.85rem",
 };
+
+/** Texte d’aide sous un libellé (définition du champ, laboratoire création conteneur). */
+export const styleAideChampCreation: CSSProperties = {
+  fontSize: "0.78rem",
+  lineHeight: 1.4,
+  opacity: 0.88,
+  marginTop: 2,
+  marginBottom: 6,
+  maxWidth: 720,
+  fontWeight: 400,
+};
+
+/** Titre visible au-dessus de l’aide et du champ (libellé fort). */
+export const styleTitreChampCreation: CSSProperties = {
+  display: "block",
+  fontSize: "0.9rem",
+  fontWeight: 600,
+  marginBottom: 2,
+};

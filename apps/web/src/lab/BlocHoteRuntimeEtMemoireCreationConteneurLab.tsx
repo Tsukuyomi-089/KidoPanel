@@ -1,8 +1,11 @@
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
+import * as Aides from "./definitionsAidesCreationConteneurLab.js";
 import {
   styleChampTexteCreation,
   styleLabelChampCreation,
+  styleTitreChampCreation,
 } from "./stylesFormulaireCreationConteneurLab.js";
+import { TexteAideChampCreationConteneurLab } from "./TexteAideChampCreationConteneurLab.js";
 
 type Props = {
   etat: EtatCreationConteneurLab;
@@ -18,9 +21,10 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
 }: Props) {
   return (
     <details style={{ marginBottom: 10 }}>
-      <summary>Hôte, runtime et mémoire (aligné API Docker)</summary>
+      <summary>Hôte Docker : IPC, PID, runtime, mémoire, cgroup, volumes</summary>
       <label style={styleLabelChampCreation}>
-        Recherche DNS (suffixes, virgules)
+        <span style={styleTitreChampCreation}>Suffixes de recherche DNS (DnsSearch)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_DNS_SEARCH} />
         <input
           value={etat.rechercheDns}
           onChange={(e) => majEtat({ rechercheDns: e.target.value })}
@@ -28,7 +32,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Options DNS (valeurs brutes moteur, virgules)
+        <span style={styleTitreChampCreation}>Options du résolveur DNS (DnsOptions)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_DNS_OPTIONS} />
         <input
           value={etat.optionsDns}
           onChange={(e) => majEtat({ optionsDns: e.target.value })}
@@ -36,7 +41,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Mode IPC (ex. shareable, host)
+        <span style={styleTitreChampCreation}>Mode IPC (IpcMode)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MODE_IPC} />
         <input
           value={etat.modeIpc}
           onChange={(e) => majEtat({ modeIpc: e.target.value })}
@@ -44,7 +50,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Mode PID (ex. host)
+        <span style={styleTitreChampCreation}>Mode PID (PidMode)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MODE_PID} />
         <input
           value={etat.modePid}
           onChange={(e) => majEtat({ modePid: e.target.value })}
@@ -52,7 +59,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Mode UTS (ex. host)
+        <span style={styleTitreChampCreation}>Mode UTS (UTSMode)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MODE_UTS} />
         <input
           value={etat.modeUts}
           onChange={(e) => majEtat({ modeUts: e.target.value })}
@@ -60,7 +68,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Mode user namespace
+        <span style={styleTitreChampCreation}>Mode user namespace (UsernsMode)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MODE_USERNS} />
         <input
           value={etat.modeUserns}
           onChange={(e) => majEtat({ modeUserns: e.target.value })}
@@ -68,7 +77,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Cgroupns du conteneur
+        <span style={styleTitreChampCreation}>Espace de noms cgroup (CgroupnsMode)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_CGROUPNS} />
         <select
           value={etat.cgroupnsMode}
           onChange={(e) =>
@@ -84,7 +94,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         </select>
       </label>
       <label style={styleLabelChampCreation}>
-        Runtime OCI (ex. runc)
+        <span style={styleTitreChampCreation}>Runtime OCI (Runtime)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_RUNTIME_OCI} />
         <input
           value={etat.runtimeConteneur}
           onChange={(e) => majEtat({ runtimeConteneur: e.target.value })}
@@ -92,7 +103,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Mémoire réservée (Mo, entier)
+        <span style={styleTitreChampCreation}>Mémoire réservée (MemoryReservation, Mo)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MEMOIRE_RESERVEE} />
         <input
           value={etat.memoireReservationMegaOctets}
           onChange={(e) => majEtat({ memoireReservationMegaOctets: e.target.value })}
@@ -100,7 +112,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Limite swap totale (Mo, entier, -1 = illimité)
+        <span style={styleTitreChampCreation}>Plafond mémoire + swap (MemorySwap, Mo ou -1)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_MEMOIRE_SWAP} />
         <input
           value={etat.memoireSwapMegaOctets}
           onChange={(e) => majEtat({ memoireSwapMegaOctets: e.target.value })}
@@ -108,23 +121,29 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Swappiness (-1 à 100, vide = défaut)
+        <span style={styleTitreChampCreation}>Comportement du swap (MemorySwappiness)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_SWAPPINESS} />
         <input
           value={etat.swappiness}
           onChange={(e) => majEtat({ swappiness: e.target.value })}
           style={styleChampTexteCreation}
         />
       </label>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-        <input
-          type="checkbox"
-          checked={etat.oomKillDesactive}
-          onChange={(e) => majEtat({ oomKillDesactive: e.target.checked })}
-        />
-        Désactiver le tueur OOM
-      </label>
+      <div style={{ marginBottom: 10 }}>
+        <span style={styleTitreChampCreation}>Désactiver le tueur mémoire du noyau (OomKillDisable)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_OOM_KILL_DESACTIVE} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.oomKillDesactive}
+            onChange={(e) => majEtat({ oomKillDesactive: e.target.checked })}
+          />
+          Ne pas tuer le processus en surconsommation mémoire
+        </label>
+      </div>
       <label style={styleLabelChampCreation}>
-        Ajustement score OOM (-1000 à 1000)
+        <span style={styleTitreChampCreation}>Priorité face au tueur OOM (OomScoreAdj)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_OOM_SCORE_ADJ} />
         <input
           value={etat.oomScoreAdj}
           onChange={(e) => majEtat({ oomScoreAdj: e.target.value })}
@@ -132,7 +151,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Pondération blkio (10 à 1000)
+        <span style={styleTitreChampCreation}>Pondération E/S disque (BlkioWeight)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_BLKIO_WEIGHT} />
         <input
           value={etat.blkioWeight}
           onChange={(e) => majEtat({ blkioWeight: e.target.value })}
@@ -140,7 +160,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Groupe cgroup parent
+        <span style={styleTitreChampCreation}>Groupe cgroup parent (CgroupParent)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_CGROUP_PARENT} />
         <input
           value={etat.cgroupParent}
           onChange={(e) => majEtat({ cgroupParent: e.target.value })}
@@ -148,7 +169,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Pilote de volume par défaut
+        <span style={styleTitreChampCreation}>Pilote de volume par défaut (VolumeDriver)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_PILOTE_VOLUME} />
         <input
           value={etat.piloteVolume}
           onChange={(e) => majEtat({ piloteVolume: e.target.value })}
@@ -156,7 +178,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        VolumesFrom (une entrée par ligne)
+        <span style={styleTitreChampCreation}>Réutiliser les montages d’un autre conteneur (VolumesFrom)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_VOLUMES_FROM} />
         <textarea
           value={etat.volumesFromLignes}
           onChange={(e) => majEtat({ volumesFromLignes: e.target.value })}
@@ -165,7 +188,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Règles cgroup périphériques (une par ligne)
+        <span style={styleTitreChampCreation}>Règles d’accès aux périphériques (DeviceCgroupRules)</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_DEVICE_CGROUP_RULES} />
         <textarea
           value={etat.deviceCgroupRulesLignes}
           onChange={(e) => majEtat({ deviceCgroupRulesLignes: e.target.value })}
@@ -174,7 +198,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Console : hauteur (lignes)
+        <span style={styleTitreChampCreation}>Console TTY : hauteur en lignes</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_CONSOLE_HAUTEUR} />
         <input
           value={etat.consoleHauteur}
           onChange={(e) => majEtat({ consoleHauteur: e.target.value })}
@@ -182,7 +207,8 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Console : largeur (colonnes)
+        <span style={styleTitreChampCreation}>Console TTY : largeur en colonnes</span>
+        <TexteAideChampCreationConteneurLab texte={Aides.AIDE_CONSOLE_LARGEUR} />
         <input
           value={etat.consoleLargeur}
           onChange={(e) => majEtat({ consoleLargeur: e.target.value })}

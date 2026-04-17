@@ -1,8 +1,26 @@
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
+  AIDE_CAP_ADD,
+  AIDE_CAP_DROP,
+  AIDE_JSON_HEALTHCHECK,
+  AIDE_JSON_HOSTCONFIG,
+  AIDE_JSON_RESEAU,
+  AIDE_MEMOIRE_LIMITE,
+  AIDE_NANO_CPUS,
+  AIDE_OUVRIR_STDIN,
+  AIDE_POLITIQUE_REDEMARRAGE,
+  AIDE_PRIVILEGIE,
+  AIDE_RACINE_LECTURE_SEULE,
+  AIDE_SECURITY_OPT,
+  AIDE_TENTATIVES_ON_FAILURE,
+  AIDE_TTY,
+} from "./definitionsAidesCreationConteneurLab.js";
+import {
   styleChampTexteCreation,
   styleLabelChampCreation,
+  styleTitreChampCreation,
 } from "./stylesFormulaireCreationConteneurLab.js";
+import { TexteAideChampCreationConteneurLab } from "./TexteAideChampCreationConteneurLab.js";
 
 type Props = {
   etat: EtatCreationConteneurLab;
@@ -17,25 +35,34 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
   return (
     <>
       <details style={{ marginBottom: 10 }}>
-        <summary>Sécurité et capacités</summary>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          <input
-            type="checkbox"
-            checked={etat.privileged}
-            onChange={(e) => majEtat({ privileged: e.target.checked })}
-          />
-          Privilégié
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          <input
-            type="checkbox"
-            checked={etat.racineLectureSeule}
-            onChange={(e) => majEtat({ racineLectureSeule: e.target.checked })}
-          />
-          Racine en lecture seule
-        </label>
+        <summary>Sécurité Linux : privilèges, capacités, options de sécurité</summary>
+        <div style={{ marginBottom: 10 }}>
+          <span style={styleTitreChampCreation}>Conteneur privilégié (Privileged)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_PRIVILEGIE} />
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={etat.privileged}
+              onChange={(e) => majEtat({ privileged: e.target.checked })}
+            />
+            Accorder les privilèges étendus de l’hôte
+          </label>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          <span style={styleTitreChampCreation}>Racine du système de fichiers en lecture seule (ReadonlyRootfs)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_RACINE_LECTURE_SEULE} />
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={etat.racineLectureSeule}
+              onChange={(e) => majEtat({ racineLectureSeule: e.target.checked })}
+            />
+            Interdire l’écriture sur la racine hors volumes
+          </label>
+        </div>
         <label style={styleLabelChampCreation}>
-          Capacités à ajouter (virgules)
+          <span style={styleTitreChampCreation}>Capacités Linux à ajouter (CapAdd)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_CAP_ADD} />
           <input
             value={etat.capacitesAjout}
             onChange={(e) => majEtat({ capacitesAjout: e.target.value })}
@@ -43,7 +70,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          Capacités à retirer (virgules)
+          <span style={styleTitreChampCreation}>Capacités Linux à retirer (CapDrop)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_CAP_DROP} />
           <input
             value={etat.capacitesRetrait}
             onChange={(e) => majEtat({ capacitesRetrait: e.target.value })}
@@ -51,7 +79,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          Options de sécurité (virgules, ex. no-new-privileges)
+          <span style={styleTitreChampCreation}>Options de sécurité du moteur (SecurityOpt)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_SECURITY_OPT} />
           <input
             value={etat.optionsSecurite}
             onChange={(e) => majEtat({ optionsSecurite: e.target.value })}
@@ -61,9 +90,10 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
       </details>
 
       <details style={{ marginBottom: 10 }}>
-        <summary>Ressources et redémarrage</summary>
+        <summary>Limites de ressources et politique de redémarrage</summary>
         <label style={styleLabelChampCreation}>
-          Limite mémoire (Mo, nombre entier)
+          <span style={styleTitreChampCreation}>Limite de mémoire vive (Memory, en Mo saisis)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_MEMOIRE_LIMITE} />
           <input
             value={etat.memoireMegaOctets}
             onChange={(e) => majEtat({ memoireMegaOctets: e.target.value })}
@@ -71,7 +101,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          Nano CPUs (quota Docker, entier positif)
+          <span style={styleTitreChampCreation}>Quota processeur (NanoCpus)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_NANO_CPUS} />
           <input
             value={etat.nanoCpus}
             onChange={(e) => majEtat({ nanoCpus: e.target.value })}
@@ -79,7 +110,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          Politique de redémarrage
+          <span style={styleTitreChampCreation}>Politique de redémarrage automatique (RestartPolicy)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_POLITIQUE_REDEMARRAGE} />
           <select
             value={etat.politiqueRedemarrage}
             onChange={(e) =>
@@ -89,16 +121,17 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
             }
             style={styleChampTexteCreation}
           >
-            <option value="">(par défaut moteur / image)</option>
-            <option value="no">no</option>
-            <option value="always">always</option>
-            <option value="on-failure">on-failure</option>
-            <option value="unless-stopped">unless-stopped</option>
+            <option value="">(défaut moteur ou image)</option>
+            <option value="no">no — ne jamais redémarrer</option>
+            <option value="always">always — toujours redémarrer</option>
+            <option value="on-failure">on-failure — si code de sortie non nul</option>
+            <option value="unless-stopped">unless-stopped — sauf arrêt explicite</option>
           </select>
         </label>
         {etat.politiqueRedemarrage === "on-failure" ? (
           <label style={styleLabelChampCreation}>
-            Tentatives max (on-failure)
+            <span style={styleTitreChampCreation}>Nombre maximal de redémarrages (on-failure)</span>
+            <TexteAideChampCreationConteneurLab texte={AIDE_TENTATIVES_ON_FAILURE} />
             <input
               value={etat.tentativesMaxOnFailure}
               onChange={(e) => majEtat({ tentativesMaxOnFailure: e.target.value })}
@@ -109,29 +142,38 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
       </details>
 
       <details style={{ marginBottom: 10 }}>
-        <summary>TTY et entrée standard</summary>
-        <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-          <input
-            type="checkbox"
-            checked={etat.tty}
-            onChange={(e) => majEtat({ tty: e.target.checked })}
-          />
-          Allouer un TTY
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            type="checkbox"
-            checked={etat.entreeStandardOuverte}
-            onChange={(e) => majEtat({ entreeStandardOuverte: e.target.checked })}
-          />
-          Ouvrir stdin
-        </label>
+        <summary>Terminal interactif (TTY) et entrée standard (stdin)</summary>
+        <div style={{ marginBottom: 10 }}>
+          <span style={styleTitreChampCreation}>Terminal alloué (Tty)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_TTY} />
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={etat.tty}
+              onChange={(e) => majEtat({ tty: e.target.checked })}
+            />
+            Allouer un pseudo-terminal
+          </label>
+        </div>
+        <div style={{ marginBottom: 4 }}>
+          <span style={styleTitreChampCreation}>Entrée standard ouverte (OpenStdin)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_OUVRIR_STDIN} />
+          <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              checked={etat.entreeStandardOuverte}
+              onChange={(e) => majEtat({ entreeStandardOuverte: e.target.checked })}
+            />
+            Garder stdin ouvert pour une session interactive
+          </label>
+        </div>
       </details>
 
       <details style={{ marginBottom: 10 }}>
         <summary>JSON avancé (healthcheck, réseau nommé, hostConfig additionnel)</summary>
         <label style={styleLabelChampCreation}>
-          Healthcheck (objet JSON, ex. test en secondes)
+          <span style={styleTitreChampCreation}>Contrôle de santé (healthcheck)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_JSON_HEALTHCHECK} />
           <textarea
             value={etat.jsonHealthcheck}
             onChange={(e) => majEtat({ jsonHealthcheck: e.target.value })}
@@ -141,7 +183,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          NetworkingConfig (objet JSON, ex. endpointsConfig)
+          <span style={styleTitreChampCreation}>Configuration réseau nommée (networkingConfig)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_JSON_RESEAU} />
           <textarea
             value={etat.jsonConfigurationReseau}
             onChange={(e) => majEtat({ jsonConfigurationReseau: e.target.value })}
@@ -151,8 +194,8 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
           />
         </label>
         <label style={styleLabelChampCreation}>
-          HostConfig additionnel (JSON fusionné ; clés non reconnues transmises telles quelles au
-          moteur Docker, ex. <code>DeviceRequests</code> ou <code>BlkioDeviceReadBps</code>)
+          <span style={styleTitreChampCreation}>Fragment hostConfig supplémentaire (JSON)</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_JSON_HOSTCONFIG} />
           <textarea
             value={etat.jsonHostConfigExtra}
             onChange={(e) => majEtat({ jsonHostConfigExtra: e.target.value })}

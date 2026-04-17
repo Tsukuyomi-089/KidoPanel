@@ -1,8 +1,19 @@
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
+  AIDE_ATTACHER_STDERR,
+  AIDE_ATTACHER_STDIN,
+  AIDE_ATTACHER_STDOUT,
+  AIDE_DELAI_ARRET,
+  AIDE_PLATEFORME_DOCKER,
+  AIDE_RESEAU_DESACTIVE,
+  AIDE_STDIN_UNE_FOIS,
+} from "./definitionsAidesCreationConteneurLab.js";
+import {
   styleChampTexteCreation,
   styleLabelChampCreation,
+  styleTitreChampCreation,
 } from "./stylesFormulaireCreationConteneurLab.js";
+import { TexteAideChampCreationConteneurLab } from "./TexteAideChampCreationConteneurLab.js";
 
 type Props = {
   etat: EtatCreationConteneurLab;
@@ -16,9 +27,10 @@ export function BlocOptionsMoteurDockerCreationConteneurLab({
 }: Props) {
   return (
     <details style={{ marginBottom: 10 }}>
-      <summary>Options moteur Docker (hors hostConfig)</summary>
+      <summary>Plateforme, délais d’arrêt et attachement des flux (hors hostConfig)</summary>
       <label style={styleLabelChampCreation}>
-        Plateforme (ex. linux/amd64)
+        <span style={styleTitreChampCreation}>Plateforme d’image (platform)</span>
+        <TexteAideChampCreationConteneurLab texte={AIDE_PLATEFORME_DOCKER} />
         <input
           value={etat.platformeDocker}
           onChange={(e) => majEtat({ platformeDocker: e.target.value })}
@@ -26,57 +38,71 @@ export function BlocOptionsMoteurDockerCreationConteneurLab({
         />
       </label>
       <label style={styleLabelChampCreation}>
-        Délai d’arrêt (secondes, 0–3600)
+        <span style={styleTitreChampCreation}>Délai avant arrêt forcé (StopTimeout, secondes)</span>
+        <TexteAideChampCreationConteneurLab texte={AIDE_DELAI_ARRET} />
         <input
           value={etat.delaiArretSecondes}
           onChange={(e) => majEtat({ delaiArretSecondes: e.target.value })}
           style={styleChampTexteCreation}
         />
       </label>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
-        <input
-          type="checkbox"
-          checked={etat.desactiverReseauConteneur}
-          onChange={(e) => majEtat({ desactiverReseauConteneur: e.target.checked })}
-        />
-        Réseau du conteneur désactivé
-      </label>
-      <p style={{ fontSize: "0.82rem", opacity: 0.85, margin: "6px 0" }}>
-        Attachement des flux standard (champs `AttachStdin` / `AttachStdout` / `AttachStderr` / `StdinOnce` de
-        l’API Docker) :
-      </p>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-        <input
-          type="checkbox"
-          checked={etat.attacherStdin}
-          onChange={(e) => majEtat({ attacherStdin: e.target.checked })}
-        />
-        Attacher le flux stdin
-      </label>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-        <input
-          type="checkbox"
-          checked={etat.attacherStdout}
-          onChange={(e) => majEtat({ attacherStdout: e.target.checked })}
-        />
-        Attacher le flux stdout
-      </label>
-      <label style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-        <input
-          type="checkbox"
-          checked={etat.attacherStderr}
-          onChange={(e) => majEtat({ attacherStderr: e.target.checked })}
-        />
-        Attacher le flux stderr
-      </label>
-      <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input
-          type="checkbox"
-          checked={etat.stdinUneFois}
-          onChange={(e) => majEtat({ stdinUneFois: e.target.checked })}
-        />
-        Fermer stdin après une attache unique
-      </label>
+      <div style={{ marginBottom: 10 }}>
+        <span style={styleTitreChampCreation}>Désactiver la pile réseau du conteneur</span>
+        <TexteAideChampCreationConteneurLab texte={AIDE_RESEAU_DESACTIVE} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.desactiverReseauConteneur}
+            onChange={(e) => majEtat({ desactiverReseauConteneur: e.target.checked })}
+          />
+          Désactiver la pile réseau du conteneur
+        </label>
+      </div>
+      <p style={{ ...styleTitreChampCreation, marginTop: 8 }}>Attachement des flux (API Docker)</p>
+      <div style={{ marginBottom: 8 }}>
+        <TexteAideChampCreationConteneurLab texte={AIDE_ATTACHER_STDIN} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.attacherStdin}
+            onChange={(e) => majEtat({ attacherStdin: e.target.checked })}
+          />
+          Attacher le flux stdin
+        </label>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <TexteAideChampCreationConteneurLab texte={AIDE_ATTACHER_STDOUT} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.attacherStdout}
+            onChange={(e) => majEtat({ attacherStdout: e.target.checked })}
+          />
+          Attacher le flux stdout
+        </label>
+      </div>
+      <div style={{ marginBottom: 8 }}>
+        <TexteAideChampCreationConteneurLab texte={AIDE_ATTACHER_STDERR} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.attacherStderr}
+            onChange={(e) => majEtat({ attacherStderr: e.target.checked })}
+          />
+          Attacher le flux stderr
+        </label>
+      </div>
+      <div style={{ marginBottom: 4 }}>
+        <TexteAideChampCreationConteneurLab texte={AIDE_STDIN_UNE_FOIS} />
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input
+            type="checkbox"
+            checked={etat.stdinUneFois}
+            onChange={(e) => majEtat({ stdinUneFois: e.target.checked })}
+          />
+          Fermer stdin après une attache unique
+        </label>
+      </div>
     </details>
   );
 }
