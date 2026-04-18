@@ -51,7 +51,15 @@ export function mountContainerRoutes(
           requestId: c.get("requestId"),
           metadata: {
             idConteneur: result.id,
-            idCatalogue: spec.imageCatalogId,
+            idCatalogue:
+              typeof spec.imageCatalogId === "string"
+                ? spec.imageCatalogId
+                : undefined,
+            imageReference:
+              typeof spec.imageReference === "string" &&
+              spec.imageReference.trim().length > 0
+                ? "[renseigne]"
+                : undefined,
           },
         });
         return c.json(result, 201);

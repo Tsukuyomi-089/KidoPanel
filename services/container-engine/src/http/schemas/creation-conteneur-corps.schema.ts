@@ -1,4 +1,7 @@
-import { IDENTIFIANTS_IMAGES_CATALOGUE } from "@kidopanel/container-catalog";
+import {
+  analyserReferenceDockerLibre,
+  IDENTIFIANTS_IMAGES_CATALOGUE,
+} from "@kidopanel/container-catalog";
 import { z } from "zod";
 
 /** Schéma d’une liaison hôte pour un port conteneur (ex. `80/tcp`). */
@@ -129,9 +132,12 @@ const hostConfigCorpsSchema = z
   .passthrough();
 
 /** Corps JSON pour `POST /containers` (création), aligné sur `ContainerCreateSpec`. */
-export const createContainerJsonSchema = z.object({
-  name: z.string().min(1).max(255).optional(),
-  imageCatalogId: z.enum(IDENTIFIANTS_IMAGES_CATALOGUE),
+export const createContainerJsonSchema = z
+  .object({
+    name: z.string().min(1).max(255).optional(),
+    imageCatalogId: z.enum(IDENTIFIANTS_IMAGES_CATALOGUE).optional(),
+    /** Référence Docker Hub ou autre registre consulté par le démon Docker (prioritaire sur `imageCatalogId`). */
+    imageReference: z.string().max(512).optional(),
   cmd: z.array(z.string()).max(512).optional(),
   entrypoint: z.array(z.string()).max(64).optional(),
   workingDir: z.string().max(4096).optional(),
@@ -157,7 +163,40 @@ export const createContainerJsonSchema = z.object({
   networkDisabled: z.boolean().optional(),
   volumes: z.record(z.string().min(1).max(4096), z.object({})).optional(),
   onBuild: z.array(z.string().min(1).max(8192)).max(128).optional(),
-  shell: z.array(z.string().min(1).max(256)).max(16).optional(),
-});
+    shell: z.array(z.string().min(1).max(256)).max(16).optional(),
+  })
+  .superRefine((donnees, ctx) => {
+    const analyseReference =
+      donnees.imageReference !== undefined &&
+      typeof donnees.imageReference === "string" &&
+      donnees.imageReference.trim().length > 0
+        ? analyserReferenceDockerLibre(donnees.imageReference)
+        : undefined;
+    if (
+      analyseReference !== undefined &&
+      analyseReference.ok === false
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: analyseReference.message,
+        path: ["imageReference"],
+      });
+      return;
+    }
+    const cataloguePresent =
+      donnees.imageCatalogId !== undefined && donnees.imageCatalogId.length > 0;
+    const referencePresent =
+      analyseReference !== undefined &&
+      analyseReference.ok === true &&
+      analyseReference.valeurNormalisee.length > 0;
+    if (!cataloguePresent && !referencePresent) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          "Indiquez « imageReference » pour une image Docker Hub ou registre accessible au démon, ou « imageCatalogId » pour le catalogue KidoPanel.",
+        path: ["imageReference"],
+      });
+    }
+  });
 
 export type CreateContainerJson = z.infer<typeof createContainerJsonSchema>;

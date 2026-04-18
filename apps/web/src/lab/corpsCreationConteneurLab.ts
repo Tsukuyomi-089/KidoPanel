@@ -102,10 +102,6 @@ function fusionObjetsEnregistrements(
 export function construireCorpsCreationConteneurDepuisEtat(
   etat: EtatCreationConteneurLab,
 ): Record<string, unknown> {
-  const idCatalogue = etat.imageCatalogId.trim();
-  if (idCatalogue.length === 0) {
-    throw new Error("L’identifiant d’image catalogue est obligatoire.");
-  }
   const corps: Record<string, unknown> = {};
   const supplementTop = etat.jsonCorpsSupplementaireTop.trim();
   if (supplementTop.length > 0) {
@@ -127,7 +123,22 @@ export function construireCorpsCreationConteneurDepuisEtat(
   }
   delete corps.image;
   delete corps.imageCatalogId;
-  corps.imageCatalogId = idCatalogue;
+  delete corps.imageReference;
+  if (etat.origineImage === "registre") {
+    const refRegistre = etat.referenceDockerRegistre.trim();
+    if (refRegistre.length === 0) {
+      throw new Error(
+        "Indiquez une référence Docker (ex. nginx:alpine ou docker.io/bitnami/nginx) lorsque vous choisissez une image hors catalogue.",
+      );
+    }
+    corps.imageReference = refRegistre;
+  } else {
+    const idCatalogue = etat.imageCatalogId.trim();
+    if (idCatalogue.length === 0) {
+      throw new Error("Choisissez une image dans le catalogue ou passez par la référence Docker libre.");
+    }
+    corps.imageCatalogId = idCatalogue;
+  }
   const nom = etat.nom.trim();
   if (nom.length > 0) {
     corps.name = nom;

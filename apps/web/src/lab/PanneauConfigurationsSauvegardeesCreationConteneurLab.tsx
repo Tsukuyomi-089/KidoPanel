@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { estIdentifiantCatalogueValide } from "@kidopanel/container-catalog";
+import {
+  analyserReferenceDockerLibre,
+  estIdentifiantCatalogueValide,
+} from "@kidopanel/container-catalog";
 import {
   construireCorpsJsonConfigurationComplet,
   normaliserCorpsJsonVersConfigurationComplete,
@@ -129,12 +132,24 @@ export function PanneauConfigurationsSauvegardeesCreationConteneurLab({
       surErreur("Le corps JSON doit être un objet (pas un tableau ni une valeur simple).");
       return;
     }
-    const idCat = corps.imageCatalogId;
-    if (typeof idCat !== "string" || !estIdentifiantCatalogueValide(idCat.trim())) {
-      surErreur(
-        "Le corps JSON doit contenir « imageCatalogId » avec un identifiant du catalogue officiel (ex. nginx, postgres).",
-      );
-      return;
+    const refBrut = corps.imageReference;
+    if (typeof refBrut === "string" && refBrut.trim().length > 0) {
+      const analyse = analyserReferenceDockerLibre(refBrut);
+      if (!analyse.ok) {
+        surErreur(analyse.message);
+        return;
+      }
+    } else {
+      const idCat = corps.imageCatalogId;
+      if (
+        typeof idCat !== "string" ||
+        !estIdentifiantCatalogueValide(idCat.trim())
+      ) {
+        surErreur(
+          "Le corps JSON doit contenir soit « imageReference » (référence Docker Hub ou registre), soit « imageCatalogId » du catalogue officiel (ex. nginx, postgres).",
+        );
+        return;
+      }
     }
     const corpsComplet = normaliserCorpsJsonVersConfigurationComplete(corps);
     if (modal === "creation") {

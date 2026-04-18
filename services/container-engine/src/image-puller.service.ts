@@ -1,4 +1,3 @@
-import type { EntreeImageOfficielleCatalogue } from "@kidopanel/container-catalog";
 import type { DockerClient } from "./docker-connection.js";
 import { executerTirageImageDocker } from "./docker/image.service.js";
 import { wrapDockerError } from "./docker/wrap-docker-operation.js";
@@ -14,71 +13,110 @@ function estErreurDocker404(err: unknown): boolean {
   return false;
 }
 
+/** Origine connue pour les journaux lors d’un tirage avant création. */
+export type MetaJournalTirageImageCreation =
+  | {
+      mode: "catalogue";
+      idCatalogue: string;
+      referenceDocker: string;
+    }
+  | {
+      mode: "libre";
+      referenceDocker: string;
+    };
+
 /**
- * Contrat du service : garantir la présence locale d’une image déjà validée par le catalogue,
- * en déclenchant au plus un tirage depuis le registre pour cette référence exacte.
+ * Contrat du service : garantir localement une référence Docker déjà acceptée par la validation,
+ * en déclenchant au plus un tirage depuis le registre pour cette chaîne exacte.
  */
-export interface ServiceTirageImageCatalogue {
-  garantirImageCatalogueSurHote(
-    entree: EntreeImageOfficielleCatalogue,
+export interface ServiceTirageImageMoteur {
+  garantirPresenceImagePourCreation(
+    meta: MetaJournalTirageImageCreation,
     requestId: string | undefined,
   ): Promise<void>;
 }
 
-/**
- * Fabrique le service de tirage contrôlé : aucune référence Docker n’est utilisée sans provenir
- * d’une entrée catalogue préalablement acceptée par {@link validerImageCatalogueAvantCreation}.
- */
-export function creerServiceTirageImageCatalogue(
+async function garantirUneReferenceSurHote(
   docker: DockerClient,
-): ServiceTirageImageCatalogue {
-  return {
-    async garantirImageCatalogueSurHote(entree, requestId) {
-      const ref = entree.referenceDocker;
-      try {
-        await docker.getImage(ref).inspect();
-        return;
-      } catch (err) {
-        if (!estErreurDocker404(err)) {
-          wrapDockerError(err);
-        }
-      }
+  referenceDocker: string,
+  requestId: string | undefined,
+  meta: MetaJournalTirageImageCreation,
+): Promise<void> {
+  try {
+    await docker.getImage(referenceDocker).inspect();
+    return;
+  } catch (err) {
+    if (!estErreurDocker404(err)) {
+      wrapDockerError(err);
+    }
+  }
 
-      journaliserMoteur({
-        niveau: "info",
-        message: "image_pull_start",
-        requestId,
-        metadata: {
-          idCatalogue: entree.id,
-          referenceDocker: ref,
-        },
-      });
-
-      try {
-        await executerTirageImageDocker(docker, ref);
-      } catch (err) {
-        journaliserMoteur({
-          niveau: "error",
-          message: "image_pull_failed",
-          requestId,
-          metadata: {
-            idCatalogue: entree.id,
-            referenceDocker: ref,
-            codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+  journaliserMoteur({
+    niveau: "info",
+    message: "image_pull_start",
+    requestId,
+    metadata:
+      meta.mode === "catalogue"
+        ? {
+            idCatalogue: meta.idCatalogue,
+            referenceDocker,
+          }
+        : {
+            referenceDocker,
+            modeImageReferenceLibre: true,
           },
-        });
-        throw err;
-      }
+  });
 
-      journaliserMoteur({
-        niveau: "info",
-        message: "image_pull_success",
-        requestId,
-        metadata: {
-          idCatalogue: entree.id,
-          referenceDocker: ref,
-        },
-      });
+  try {
+    await executerTirageImageDocker(docker, referenceDocker);
+  } catch (err) {
+    journaliserMoteur({
+      niveau: "error",
+      message: "image_pull_failed",
+      requestId,
+      metadata:
+        meta.mode === "catalogue"
+          ? {
+              idCatalogue: meta.idCatalogue,
+              referenceDocker,
+              codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+            }
+          : {
+              referenceDocker,
+              modeImageReferenceLibre: true,
+              codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+            },
+    });
+    throw err;
+  }
+
+  journaliserMoteur({
+    niveau: "info",
+    message: "image_pull_success",
+    requestId,
+    metadata:
+      meta.mode === "catalogue"
+        ? {
+            idCatalogue: meta.idCatalogue,
+            referenceDocker,
+          }
+        : {
+            referenceDocker,
+            modeImageReferenceLibre: true,
+          },
+  });
+}
+
+/**
+ * Fabrique le service de tirage ; la chaîne utilisée doit provenir exclusivement du catalogue ou
+ * du contrôle {@link analyserReferenceDockerLibre}, jamais d’une entrée brute utilisateur sans validation.
+ */
+export function creerServiceTirageImageMoteur(
+  docker: DockerClient,
+): ServiceTirageImageMoteur {
+  return {
+    async garantirPresenceImagePourCreation(meta, requestId) {
+      await garantirUneReferenceSurHote(docker, meta.referenceDocker, requestId, meta);
     },
   };
 }

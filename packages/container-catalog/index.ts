@@ -11,3 +11,4 @@ export {
   type ImageCatalogId,
   type ImageCatalogueApi,
 } from "./images-officielles.js";
+export { analyserReferenceDockerLibre } from "./validation-reference-docker-libre.js";

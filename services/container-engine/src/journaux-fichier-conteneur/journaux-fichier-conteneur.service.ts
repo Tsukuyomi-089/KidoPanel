@@ -11,7 +11,10 @@ import { SuiviSortieJournauxVersFichier } from "./journaux-fichier-conteneur.sui
 
 /** Métadonnées minimales enregistrées à la création (aucun secret : pas de variables d’environnement). */
 export type MetaCreationConteneurPourJournal = {
-  idCatalogueImage: string;
+  /** Référence Docker réellement injectée dans la création (`Image`). */
+  referenceDockerEffective: string;
+  /** Présent uniquement lorsque la création passe par le catalogue KidoPanel. */
+  idCatalogueImage?: string;
   nomConteneur?: string;
   hostname?: string;
   idRequete?: string;
@@ -68,7 +71,10 @@ export class ServiceJournauxFichierConteneur {
       const idComplet = await resoudreIdCompletConteneur(this.docker, idReference);
       await this.ecrireEvenement(idComplet, "conteneur_cree", {
         idConteneur: idComplet,
-        idCatalogueImage: meta.idCatalogueImage,
+        referenceDockerEffective: meta.referenceDockerEffective,
+        ...(meta.idCatalogueImage !== undefined
+          ? { idCatalogueImage: meta.idCatalogueImage }
+          : {}),
         nomConteneur: meta.nomConteneur,
         hostname: meta.hostname,
         idRequete: meta.idRequete,

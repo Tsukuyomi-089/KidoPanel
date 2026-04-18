@@ -21,9 +21,9 @@ import {
   type FluxSuiviJournaux,
 } from "./container-engine-logs.js";
 import { traduireOptionsCreationConteneur } from "./docker/traduction-options-creation-conteneur.js";
-import { creerServiceTirageImageCatalogue } from "./image-puller.service.js";
-import { validerImageCatalogueAvantCreation } from "./image-validator.service.js";
-import type { ServiceTirageImageCatalogue } from "./image-puller.service.js";
+import { creerServiceTirageImageMoteur } from "./image-puller.service.js";
+import type { ServiceTirageImageMoteur } from "./image-puller.service.js";
+import { resoudreImagePourCreation } from "./image-validator.service.js";
 import { journaliserMoteur } from "./observabilite/journal-json.js";
 import {
   creerServiceJournauxFichierConteneur,
@@ -47,7 +47,7 @@ export interface ContainerEngineOptions {
  */
 export class ContainerEngine {
   private readonly docker: DockerClient;
-  private readonly serviceTirageCatalogue: ServiceTirageImageCatalogue;
+  private readonly serviceTirageImage: ServiceTirageImageMoteur;
   private readonly journauxFichierConteneur: ServiceJournauxFichierConteneur | undefined;
 
   constructor(options?: ContainerEngineOptions) {
@@ -56,7 +56,7 @@ export class ContainerEngine {
     } else {
       this.docker = createDockerClient(options?.connection);
     }
-    this.serviceTirageCatalogue = creerServiceTirageImageCatalogue(this.docker);
+    this.serviceTirageImage = creerServiceTirageImageMoteur(this.docker);
     if (options?.journauxFichierConteneur === false) {
       this.journauxFichierConteneur = undefined;
     } else {
@@ -103,10 +103,21 @@ export class ContainerEngine {
     options?: { requestId?: string },
   ): Promise<CreateContainerResult> {
     const requestId = options?.requestId;
-    const entree = validerImageCatalogueAvantCreation(spec.imageCatalogId, requestId);
-    await this.serviceTirageCatalogue.garantirImageCatalogueSurHote(entree, requestId);
+    const resolu = resoudreImagePourCreation(spec, requestId);
+    const metaTirage =
+      resolu.mode === "catalogue"
+        ? {
+            mode: "catalogue" as const,
+            idCatalogue: resolu.idCatalogue,
+            referenceDocker: resolu.referenceDocker,
+          }
+        : {
+            mode: "libre" as const,
+            referenceDocker: resolu.referenceDocker,
+          };
+    await this.serviceTirageImage.garantirPresenceImagePourCreation(metaTirage, requestId);
 
-    const opts = traduireOptionsCreationConteneur(spec, entree.referenceDocker);
+    const opts = traduireOptionsCreationConteneur(spec, resolu.referenceDocker);
 
     try {
       const container = await this.docker.createContainer(opts);
@@ -116,8 +127,9 @@ export class ContainerEngine {
         requestId,
         metadata: {
           idConteneur: container.id,
-          idCatalogue: entree.id,
-          referenceDocker: entree.referenceDocker,
+          idCatalogue:
+            resolu.mode === "catalogue" ? resolu.idCatalogue : undefined,
+          referenceDocker: resolu.referenceDocker,
         },
       });
       const resultat: CreateContainerResult = {
@@ -126,7 +138,9 @@ export class ContainerEngine {
       };
       void this.journauxFichierConteneur
         ?.notifierCreation(resultat.id, {
-          idCatalogueImage: spec.imageCatalogId,
+          referenceDockerEffective: resolu.referenceDocker,
+          idCatalogueImage:
+            resolu.mode === "catalogue" ? resolu.idCatalogue : undefined,
           nomConteneur: spec.name,
           hostname: spec.hostname,
           idRequete: requestId,
@@ -192,21 +206,31 @@ export class ContainerEngine {
    * Force le tirage d’une image catalogue depuis le registre (même si une couche locale existe).
    */
   async pullImage(
-    imageCatalogId: string,
+    params: Pick<ContainerCreateSpec, "imageCatalogId" | "imageReference">,
     options?: { requestId?: string },
   ): Promise<void> {
-    const entree = validerImageCatalogueAvantCreation(imageCatalogId, options?.requestId);
     const requestId = options?.requestId;
-    const ref = entree.referenceDocker;
+    const resolu = resoudreImagePourCreation(
+      params as ContainerCreateSpec,
+      requestId,
+    );
+    const ref = resolu.referenceDocker;
     journaliserMoteur({
       niveau: "info",
       message: "image_pull_start",
       requestId,
-      metadata: {
-        idCatalogue: entree.id,
-        referenceDocker: ref,
-        mode: "pull_force",
-      },
+      metadata:
+        resolu.mode === "catalogue"
+          ? {
+              idCatalogue: resolu.idCatalogue,
+              referenceDocker: ref,
+              mode: "pull_force",
+            }
+          : {
+              referenceDocker: ref,
+              mode: "pull_force",
+              modeImageReferenceLibre: true,
+            },
     });
     try {
       await executerTirageImageDocker(this.docker, ref);
@@ -215,12 +239,20 @@ export class ContainerEngine {
         niveau: "error",
         message: "image_pull_failed",
         requestId,
-        metadata: {
-          idCatalogue: entree.id,
-          referenceDocker: ref,
-          codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
-          mode: "pull_force",
-        },
+        metadata:
+          resolu.mode === "catalogue"
+            ? {
+                idCatalogue: resolu.idCatalogue,
+                referenceDocker: ref,
+                codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+                mode: "pull_force",
+              }
+            : {
+                referenceDocker: ref,
+                codeErreur: isContainerEngineError(err) ? err.code : "inconnu",
+                mode: "pull_force",
+                modeImageReferenceLibre: true,
+              },
       });
       throw err;
     }
@@ -228,11 +260,18 @@ export class ContainerEngine {
       niveau: "info",
       message: "image_pull_success",
       requestId,
-      metadata: {
-        idCatalogue: entree.id,
-        referenceDocker: ref,
-        mode: "pull_force",
-      },
+      metadata:
+        resolu.mode === "catalogue"
+          ? {
+              idCatalogue: resolu.idCatalogue,
+              referenceDocker: ref,
+              mode: "pull_force",
+            }
+          : {
+              referenceDocker: ref,
+              mode: "pull_force",
+              modeImageReferenceLibre: true,
+            },
     });
   }
 

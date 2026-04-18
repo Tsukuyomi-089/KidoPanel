@@ -3,21 +3,17 @@ import type { ImageCatalogueApi } from "@kidopanel/container-catalog";
 import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
-  GrilleCatalogueImagesCreationConteneurLab,
-  libelleCategorieImageCatalogueLab,
-} from "./GrilleCatalogueImagesCreationConteneurLab.js";
-import {
   AIDE_ADRESSE_MAC,
   AIDE_CMD,
   AIDE_DOMAINNAME,
   AIDE_ENTRYPOINT,
   AIDE_HOSTNAME_CONTENEUR,
-  AIDE_IMAGE_REFERENCE,
   AIDE_NOM_CONTENEUR,
   AIDE_REPERTOIRE_TRAVAIL,
   AIDE_SIGNAL_ARRET,
   AIDE_UTILISATEUR_PROCESSUS,
 } from "./definitionsAidesCreationConteneurLab.js";
+import { SousBlocChoixImageDockerCreationConteneurLab } from "./SousBlocChoixImageDockerCreationConteneurLab.js";
 import { appelerPasserelle } from "./passerelleClient.js";
 import {
   styleChampTexteCreation,
@@ -92,94 +88,18 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
     };
   }, [jetonSession]);
 
-  const selection = imagesCatalogue.find((x) => x.id === etat.imageCatalogId);
-
   return (
     <>
       <div className="kp-creation-sous-carte">
-        <h2>Image officielle et nom Docker</h2>
-        <div style={styleLabelChampCreation}>
-          <span style={styleTitreChampCreation} id="kp-catalogue-image-titre">
-            Catalogue contrôlé (imageCatalogId)
-          </span>
-          <TexteAideChampCreationConteneurLab texte={AIDE_IMAGE_REFERENCE} />
-          <GrilleCatalogueImagesCreationConteneurLab
-            images={imagesCatalogue}
-            identifiantSelectionne={etat.imageCatalogId}
-            interactionDesactivee={
-              chargementCatalogue ||
-              jetonSession.trim() === "" ||
-              imagesCatalogue.length === 0
-            }
-            surSelection={(id) => {
-              majEtat({ imageCatalogId: id });
-            }}
-          />
-          <p className="kp-creation-catalogue-select-hint">
-            Liste compacte : identifiant unique du corps JSON vers la passerelle (ex. nginx, postgres).
-          </p>
-          <select
-          aria-labelledby="kp-catalogue-image-titre"
-          value={
-            imagesCatalogue.some((x) => x.id === etat.imageCatalogId)
-              ? etat.imageCatalogId
-              : ""
-          }
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v !== "") {
-              majEtat({ imageCatalogId: v });
-            }
-          }}
-          disabled={
-            chargementCatalogue ||
-            jetonSession.trim() === "" ||
-            imagesCatalogue.length === 0
-          }
-          style={styleChampTexteCreation}
-        >
-          {jetonSession.trim() === "" ? (
-            <option value="">Connexion requise pour lister les images</option>
-          ) : chargementCatalogue ? (
-            <option value="">Chargement du catalogue…</option>
-          ) : imagesCatalogue.length === 0 ? (
-            <option value="">Aucune image catalogue (vérifiez la connexion)</option>
-          ) : (
-            imagesCatalogue.map((img) => (
-              <option key={img.id} value={img.id}>
-                {img.id} — {img.referenceDocker}
-              </option>
-            ))
-          )}
-        </select>
-        {erreurCatalogue !== null ? (
-          <p style={{ fontSize: "0.85rem", color: "#b00020", marginTop: 6 }}>
-            {erreurCatalogue}
-          </p>
-        ) : null}
-        {selection !== undefined ? (
-          <div
-            style={{
-              marginTop: 8,
-              fontSize: "0.88rem",
-              opacity: 0.92,
-              lineHeight: 1.45,
-            }}
-          >
-            <div>
-              <strong>Catégorie :</strong>{" "}
-              {libelleCategorieImageCatalogueLab(selection.categorie)}
-            </div>
-            <div style={{ marginTop: 4 }}>
-              <strong>Description :</strong> {selection.description}
-            </div>
-            <div style={{ marginTop: 4 }}>
-              <strong>Référence Docker résolue :</strong>{" "}
-              <code>{selection.referenceDocker}</code>
-            </div>
-          </div>
-        ) : null}
-        </div>
+        <h2>Image Docker et nom sur l’hôte</h2>
+        <SousBlocChoixImageDockerCreationConteneurLab
+          etat={etat}
+          majEtat={majEtat}
+          jetonSession={jetonSession}
+          imagesCatalogue={imagesCatalogue}
+          chargementCatalogue={chargementCatalogue}
+          erreurCatalogue={erreurCatalogue}
+        />
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Nom du conteneur sur l’hôte</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_NOM_CONTENEUR} />

@@ -147,8 +147,16 @@ export interface ContainerHostConfig {
 export interface ContainerCreateSpec {
   /** Nom du conteneur (paramètre de requête Docker `name`). */
   name?: string;
-  /** Identifiant d’image dans le catalogue officiel KidoPanel (résolu en référence Docker côté moteur). */
-  imageCatalogId: ImageCatalogId;
+  /**
+   * Identifiant d’image dans le catalogue officiel ; ignoré si `imageReference` est renseignée
+   * (priorité à la référence Docker libre).
+   */
+  imageCatalogId?: ImageCatalogId;
+  /**
+   * Référence Docker ou OCI (`nginx:alpine`, `docker.io/…`, digest) lorsque l’image ne passe pas par le catalogue.
+   * Tirage depuis le registre configuré sur l’hôte (souvent Docker Hub par défaut).
+   */
+  imageReference?: string;
   /** Arguments du processus principal (`Cmd`). */
   cmd?: string[];
   /** Point d’entrée (`Entrypoint`). */
