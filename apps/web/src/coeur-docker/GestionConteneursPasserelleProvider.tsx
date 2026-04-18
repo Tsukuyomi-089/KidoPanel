@@ -43,6 +43,13 @@ export type GestionConteneursPasserelleContexte = {
   reverifierPasserelle: () => Promise<void>;
   rafraichirListe: () => Promise<void>;
   surCreer: () => Promise<void>;
+  /**
+   * Crée une instance via gabarit passerelle (`templateId` + `configuration`) sans reconstruire le corps depuis le formulaire avancé.
+   */
+  surCreerDepuisTemplate: (
+    templateId: string,
+    configuration: Record<string, unknown>,
+  ) => Promise<void>;
   actionConteneur: (
     id: string,
     methode: "POST" | "DELETE",
@@ -131,7 +138,7 @@ export function GestionConteneursPasserelleProvider({
         formaterErreurPourAffichagePanel(
           e,
           composerUrlPasserelle("/containers"),
-          "liste des conteneurs",
+          "liste des instances",
         ),
       );
     } finally {
@@ -173,11 +180,37 @@ export function GestionConteneursPasserelleProvider({
         formaterErreurPourAffichagePanel(
           e,
           composerUrlPasserelle("/containers"),
-          "création de conteneur",
+          "création d’instance",
         ),
       );
     }
   }, [afficherErreurSiBesoin, etatCreation, rafraichirListe]);
+
+  const surCreerDepuisTemplate = useCallback(
+    async (templateId: string, configuration: Record<string, unknown>) => {
+      setMessageErreur(null);
+      try {
+        refUrlContexteErreur.current = composerUrlPasserelle("/containers");
+        const reponse = await appelerPasserelle("/containers", {
+          method: "POST",
+          body: JSON.stringify({ templateId, configuration }),
+        });
+        if (!(await afficherErreurSiBesoin(reponse))) {
+          return;
+        }
+        await rafraichirListe();
+      } catch (e) {
+        setMessageErreur(
+          formaterErreurPourAffichagePanel(
+            e,
+            composerUrlPasserelle("/containers"),
+            "création d’instance depuis gabarit",
+          ),
+        );
+      }
+    },
+    [afficherErreurSiBesoin, rafraichirListe],
+  );
 
   const actionConteneur = useCallback(
     async (id: string, methode: "POST" | "DELETE", cheminSuffixe: string) => {
@@ -201,7 +234,7 @@ export function GestionConteneursPasserelleProvider({
             composerUrlPasserelle(
               `/containers/${encodeURIComponent(id)}${cheminSuffixe}`,
             ),
-            "action sur un conteneur",
+            "action sur une instance",
           ),
         );
       }
@@ -228,6 +261,7 @@ export function GestionConteneursPasserelleProvider({
       reverifierPasserelle,
       rafraichirListe,
       surCreer,
+      surCreerDepuisTemplate,
       actionConteneur,
       jetonSession,
       refUrlContexteErreur,
@@ -244,6 +278,7 @@ export function GestionConteneursPasserelleProvider({
     reverifierPasserelle,
     rafraichirListe,
     surCreer,
+    surCreerDepuisTemplate,
     actionConteneur,
   ]);
 

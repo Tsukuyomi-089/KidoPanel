@@ -23,6 +23,8 @@ type Props = {
    * où l’en-tête de page porte déjà le contexte.
    */
   masquerParagrapheDocumentationApi?: boolean;
+  /** Libellés « instance » au lieu de « conteneur » pour le panel PaaS (formulaire expert). */
+  terminologieInstance?: boolean;
 };
 
 /** Formulaire avancé de création (image catalogue, commande, réseau, ressources, JSON santé / réseau / host). */
@@ -34,8 +36,17 @@ export function SectionCreationConteneurAvanceLab({
   surErreurConfiguration,
   jetonSession,
   masquerParagrapheDocumentationApi = false,
+  terminologieInstance = false,
 }: Props) {
   const modePanel = masquerParagrapheDocumentationApi;
+  const titrePrincipal =
+    modePanel && terminologieInstance
+      ? "Mode expert — création d’instance"
+      : modePanel
+        ? "Atelier de création"
+        : "Créer un conteneur (aide par champ)";
+  const libelleBoutonCreer =
+    modePanel && terminologieInstance ? "Créer l’instance" : "Créer le conteneur";
 
   return (
     <section
@@ -44,12 +55,12 @@ export function SectionCreationConteneurAvanceLab({
       }
       style={modePanel ? undefined : styleBlocLab}
     >
-      <h2 style={modePanel ? undefined : { fontSize: "1rem", marginTop: 0 }}>
-        {modePanel ? "Atelier de création" : "Créer un conteneur (aide par champ)"}
-      </h2>
+      <h2 style={modePanel ? undefined : { fontSize: "1rem", marginTop: 0 }}>{titrePrincipal}</h2>
       <aside className="kp-creation-conseil">
         <h3 className="kp-creation-conseil__titre">
-          Création, démarrage et conteneurs qui s’arrêtent aussitôt
+          {terminologieInstance
+            ? "Création, démarrage et instances qui s’arrêtent aussitôt"
+            : "Création, démarrage et conteneurs qui s’arrêtent aussitôt"}
         </h3>
         <div className="kp-creation-conseil__role">
           <TexteAideChampCreationConteneurLab texte={AIDE_CREATION_CONTENEUR_ENTETE} />
@@ -87,12 +98,12 @@ export function SectionCreationConteneurAvanceLab({
       {modePanel ? (
         <div className="kp-creation-actions">
           <button type="button" className="bouton-principal-kido" onClick={() => void surCreer()}>
-            Créer le conteneur
+            {libelleBoutonCreer}
           </button>
         </div>
       ) : (
         <button type="button" onClick={() => void surCreer()}>
-          Créer le conteneur
+          {libelleBoutonCreer}
         </button>
       )}
     </section>

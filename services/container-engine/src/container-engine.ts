@@ -20,10 +20,10 @@ import {
   ouvrirFluxSuiviJournaux,
   type FluxSuiviJournaux,
 } from "./container-engine-logs.js";
-import { traduireOptionsCreationConteneur } from "./docker/traduction-options-creation-conteneur.js";
 import { creerServiceTirageImageMoteur } from "./image-puller.service.js";
 import type { ServiceTirageImageMoteur } from "./image-puller.service.js";
 import { resoudreImagePourCreation } from "./image-validator.service.js";
+import { executerCreationConteneurDocker } from "./docker/executer-creation-conteneur-docker.js";
 import { journaliserMoteur } from "./observabilite/journal-json.js";
 import {
   creerServiceJournauxFichierConteneur,
@@ -102,54 +102,15 @@ export class ContainerEngine {
     spec: ContainerCreateSpec,
     options?: { requestId?: string },
   ): Promise<CreateContainerResult> {
-    const requestId = options?.requestId;
-    const resolu = resoudreImagePourCreation(spec, requestId);
-    const metaTirage =
-      resolu.mode === "catalogue"
-        ? {
-            mode: "catalogue" as const,
-            idCatalogue: resolu.idCatalogue,
-            referenceDocker: resolu.referenceDocker,
-          }
-        : {
-            mode: "libre" as const,
-            referenceDocker: resolu.referenceDocker,
-          };
-    await this.serviceTirageImage.garantirPresenceImagePourCreation(metaTirage, requestId);
-
-    const opts = traduireOptionsCreationConteneur(spec, resolu.referenceDocker);
-
-    try {
-      const container = await this.docker.createContainer(opts);
-      journaliserMoteur({
-        niveau: "info",
-        message: "creation_conteneur_catalogue_terminee",
-        requestId,
-        metadata: {
-          idConteneur: container.id,
-          idCatalogue:
-            resolu.mode === "catalogue" ? resolu.idCatalogue : undefined,
-          referenceDocker: resolu.referenceDocker,
-        },
-      });
-      const resultat: CreateContainerResult = {
-        id: container.id,
-        warnings: [],
-      };
-      void this.journauxFichierConteneur
-        ?.notifierCreation(resultat.id, {
-          referenceDockerEffective: resolu.referenceDocker,
-          idCatalogueImage:
-            resolu.mode === "catalogue" ? resolu.idCatalogue : undefined,
-          nomConteneur: spec.name,
-          hostname: spec.hostname,
-          idRequete: requestId,
-        })
-        .catch(() => {});
-      return resultat;
-    } catch (e) {
-      wrapDockerError(e);
-    }
+    return executerCreationConteneurDocker(
+      {
+        docker: this.docker,
+        serviceTirageImage: this.serviceTirageImage,
+        journauxFichierConteneur: this.journauxFichierConteneur,
+      },
+      spec,
+      options,
+    );
   }
 
   async startContainer(id: string): Promise<void> {

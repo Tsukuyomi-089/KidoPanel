@@ -17,11 +17,11 @@ export function PageCoeurDockerKidoPanel() {
           <p className="kidopanel-sur-titre">Infrastructure</p>
           <h1 className="kidopanel-titre-page">Cœur Docker</h1>
           <p className="kidopanel-sous-titre-page">
-            Liste filtrée par votre compte, alignée sur la passerelle et le moteur de conteneurs.
+            Liste des instances Docker filtrée par votre compte via la passerelle et le moteur.
           </p>
         </div>
         <Link to="/coeur-docker/nouveau" className="bouton-principal-kido kidopanel-lien-bouton">
-          Ajouter un conteneur
+          Créer une instance
         </Link>
       </header>
 

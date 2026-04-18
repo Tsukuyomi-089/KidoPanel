@@ -26,6 +26,11 @@ export type OptionsRelaisVersContainerEngine = {
    * Sert notamment à imposer `all=true` sur le listage Docker tout en laissant le client sans paramètre.
    */
   parametresRequeteFusion?: Record<string, string>;
+  /**
+   * Corps HTTP de remplacement (ex. après transformation passerelle du JSON `POST /containers`).
+   * Si défini, le corps de la requête entrante n’est pas relu.
+   */
+  corpsRemplacement?: ArrayBuffer | Uint8Array;
 };
 
 /**
@@ -66,8 +71,10 @@ export async function forwardRequestToContainerEngine(
   enTetes.set(EN_TETE_ID_REQUETE_INTERNE, idCorrelation);
 
   const methode = c.req.method;
-  let corps: ArrayBuffer | undefined;
-  if (methode !== "GET" && methode !== "HEAD") {
+  let corps: ArrayBuffer | Uint8Array | undefined;
+  if (options?.corpsRemplacement !== undefined) {
+    corps = options.corpsRemplacement;
+  } else if (methode !== "GET" && methode !== "HEAD") {
     corps = await c.req.arrayBuffer();
   }
 

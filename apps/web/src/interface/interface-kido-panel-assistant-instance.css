@@ -1,0 +1,112 @@
+/* Styles de l’assistant guidé « créer une instance » (gabarits + surcouche JSON). */
+
+.kp-assistant-instance__etape {
+  margin-bottom: 2rem;
+}
+
+.kp-assistant-instance__titre-etape {
+  font-size: 1.25rem;
+  margin: 0 0 0.75rem;
+}
+
+.kp-assistant-instance__intro {
+  margin: 0 0 1rem;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.kp-assistant-instance__erreur {
+  color: #b00020;
+  margin-bottom: 1rem;
+}
+
+.kp-assistant-instance__chargement {
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.kp-assistant-instance__liste-cartes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.kp-assistant-instance__carte {
+  border: 1px solid var(--workspace-bordure-faible, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  background: var(--workspace-surface-elevee, rgba(15, 23, 42, 0.55));
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  height: 100%;
+}
+
+.kp-assistant-instance__carte-titre {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.kp-assistant-instance__carte-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  flex: 1;
+}
+
+.kp-assistant-instance__carte-meta {
+  margin: 0;
+  font-size: 0.82rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.kp-assistant-instance__badge {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(34, 211, 238, 0.12);
+  color: var(--workspace-accent-texte, #a5f3fc);
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+
+.kp-assistant-instance__carte-ref code {
+  font-size: 0.85em;
+}
+
+.kp-assistant-instance__actions-haut {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.kp-assistant-instance__label-json {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.kp-assistant-instance__textarea-json {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--workspace-bordure-faible, rgba(255, 255, 255, 0.14));
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+  margin-bottom: 1rem;
+}
+
+.kp-assistant-instance__actions-bas {
+  margin-top: 0.5rem;
+}

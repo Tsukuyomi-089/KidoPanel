@@ -46,7 +46,7 @@ type Props = {
 };
 
 /**
- * Tableau dense des conteneurs : nom Docker, image, état, ports, adresse IP associée aux publications.
+ * Tableau dense des instances : nom Docker, image, état, ports, adresse IP associée aux publications.
  */
 export function GrilleConteneursCoeurDocker({
   conteneurs,
@@ -61,7 +61,7 @@ export function GrilleConteneursCoeurDocker({
   return (
     <section className="kidopanel-carte-principale">
       <div className="kidopanel-entete-section">
-        <h2 className="kidopanel-titre-section">Conteneurs sous votre contrôle</h2>
+        <h2 className="kidopanel-titre-section">Instances sous votre contrôle</h2>
         <button
           type="button"
           className="bouton-secondaire-kido"

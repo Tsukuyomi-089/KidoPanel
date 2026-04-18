@@ -235,4 +235,6 @@ export interface ContainerSummary {
 export interface CreateContainerResult {
   id: string;
   warnings: string[];
+  /** Adresse IPv4 du conteneur sur le réseau interne `kidopanel-network`, si connue après inspection. */
+  ipReseauInterne?: string;
 }

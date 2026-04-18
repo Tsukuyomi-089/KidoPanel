@@ -9,10 +9,16 @@ import { journaliserPasserelle } from "../../observabilite/journal-json.js";
 import { forwardRequestToContainerEngine } from "../proxy/container-engine-proxy.js";
 import type { VariablesGateway } from "../types/gateway-variables.js";
 import { proxyFluxJournauxSseAvecPropriete } from "./proxy-flux-journaux-sse.service.js";
+import { transformerCorpsCreationConteneurPourMoteur } from "./transformation-corps-creation-conteneur.service.js";
+import { ErreurCorpsCreationInstance } from "./erreur-corps-creation-instance.js";
 
 type ListeConteneursAmont = { containers: Array<{ id: string }> };
 
-type CreationConteneurAmont = { id: string; warnings?: string[] };
+type CreationConteneurAmont = {
+  id: string;
+  warnings?: string[];
+  ipReseauInterne?: string;
+};
 
 /** Chemin HTTP normalisé pour les comparaisons de route (URL absolue ou relative côté Hono). */
 function obtenirCheminHttpPourRoutage(
@@ -121,7 +127,47 @@ export async function proxyCreationConteneursPost(
   depotPropriete: ContainerOwnershipRepository,
 ): Promise<Response> {
   const chemin = obtenirCheminHttpPourRoutage(c);
-  const amont = await forwardRequestToContainerEngine(c);
+  const brutCorps = await c.req.text();
+  let corpsRemplacement: Uint8Array;
+  if (brutCorps.trim().length === 0) {
+    corpsRemplacement = new Uint8Array(0);
+  } else {
+    let parse: unknown;
+    try {
+      parse = JSON.parse(brutCorps) as unknown;
+    } catch {
+      return reponseJsonErreur(
+        "CORPS_JSON_INVALIDE",
+        "Le corps JSON de création de conteneur est invalide.",
+        400,
+      );
+    }
+    try {
+      const transforme = transformerCorpsCreationConteneurPourMoteur(parse);
+      corpsRemplacement = new TextEncoder().encode(JSON.stringify(transforme));
+    } catch (erreur) {
+      if (erreur instanceof ErreurCorpsCreationInstance) {
+        journaliserPasserelle({
+          niveau: "info",
+          message: "creation_conteneur_rejet_corps_instance",
+          requestId: c.get("requestId"),
+          metadata: {
+            codeMetier: erreur.codeMetier,
+            utilisateurId: utilisateur.id,
+          },
+        });
+        return reponseJsonErreur(
+          erreur.codeMetier,
+          erreur.message,
+          400,
+        );
+      }
+      throw erreur;
+    }
+  }
+  const amont = await forwardRequestToContainerEngine(c, {
+    corpsRemplacement,
+  });
   if (!amont.ok && amont.status >= 500) {
     journaliserPasserelle({
       niveau: "error",
