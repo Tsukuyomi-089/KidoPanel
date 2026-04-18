@@ -1,5 +1,6 @@
 import { lireJetonStockage } from "../lab/passerelleClient.js";
 import { extraireEmailDepuisJetonClient } from "../passerelle/lectureEmailJetonClient.js";
+import { extraireRoleDepuisJetonClient } from "../passerelle/lectureRoleJetonClient.js";
 
 /**
  * Paramètres du compte : informations de session et sections réservées aux évolutions futures.
@@ -7,6 +8,7 @@ import { extraireEmailDepuisJetonClient } from "../passerelle/lectureEmailJetonC
 export function PageParametresCompteKidoPanel() {
   const jeton = lireJetonStockage();
   const email = extraireEmailDepuisJetonClient(jeton);
+  const roleAffiche = extraireRoleDepuisJetonClient(jeton);
 
   return (
     <div className="kidopanel-page-centree kidopanel-page-parametres">
@@ -22,6 +24,10 @@ export function PageParametresCompteKidoPanel() {
           <div>
             <dt>Adresse e-mail</dt>
             <dd>{email ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Rôle applicatif</dt>
+            <dd>{roleAffiche}</dd>
           </div>
           <div>
             <dt>Identifiant jeton</dt>

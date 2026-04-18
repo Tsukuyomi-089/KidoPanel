@@ -1,6 +1,7 @@
 import type { Context, MiddlewareHandler, Next } from "hono";
 import { jwtVerify } from "jose";
 import type { VariablesGateway } from "../http/types/gateway-variables.js";
+import type { RoleUtilisateurKidoPanel } from "./user.types.js";
 
 /**
  * Exige un JWT HS256 valide (émis par la passerelle) et enrichit le contexte avec l’utilisateur courant.
@@ -52,7 +53,16 @@ export function creerMiddlewareAuthObligatoire(
           401,
         );
       }
-      c.set("utilisateur", { id: sub, email });
+      const roleJeton = payload.role;
+      let role: RoleUtilisateurKidoPanel = "USER";
+      if (
+        roleJeton === "ADMIN" ||
+        roleJeton === "USER" ||
+        roleJeton === "VIEWER"
+      ) {
+        role = roleJeton;
+      }
+      c.set("utilisateur", { id: sub, email, role });
     } catch {
       return c.json(
         {

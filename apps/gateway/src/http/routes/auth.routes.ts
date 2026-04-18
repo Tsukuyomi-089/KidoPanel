@@ -33,7 +33,11 @@ export function monterRoutesAuth(
         return c.json(
           {
             token: jeton,
-            user: { id: utilisateur.id, email: utilisateur.email },
+            user: {
+              id: utilisateur.id,
+              email: utilisateur.email,
+              role: utilisateur.role,
+            },
           },
           201,
         );
@@ -74,7 +78,11 @@ export function monterRoutesAuth(
       });
       return c.json({
         token: jeton,
-        user: { id: utilisateur.id, email: utilisateur.email },
+        user: {
+          id: utilisateur.id,
+          email: utilisateur.email,
+          role: utilisateur.role,
+        },
       });
     } catch (erreur) {
       if (

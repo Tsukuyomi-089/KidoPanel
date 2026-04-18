@@ -1,5 +1,6 @@
 import { expect } from "vitest";
 import type { Hono } from "hono";
+import { prisma } from "./passerelle-integration-setup.js";
 
 const ORIGINE = "http://localhost";
 
@@ -26,7 +27,21 @@ export async function inscrireUtilisateurTest(
     token: string;
     user: { id: string };
   };
-  return { jeton: corps.token, idUtilisateur: corps.user.id };
+  await prisma.user.update({
+    where: { id: corps.user.id },
+    data: { role: "USER" },
+  });
+  const repriseSession = await app.request(`${ORIGINE}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: motDePasse }),
+  });
+  expect(repriseSession.status).toBe(200);
+  const session = (await repriseSession.json()) as {
+    token: string;
+    user: { id: string };
+  };
+  return { jeton: session.token, idUtilisateur: session.user.id };
 }
 
 export async function creerConteneurViaPasserelle(

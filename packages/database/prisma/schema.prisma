@@ -11,9 +11,83 @@ model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique
   password  String
+  role      UserRole @default(USER)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  ownerships ContainerOwnership[]
+  ownerships        ContainerOwnership[]
+  quotas            UserQuota?
+  instances         GameServerInstance[]
+  webInstances      WebInstance[]
+  auditLogs         AuditLog[]
+}
+
+model UserQuota {
+  id           String @id @default(uuid()) @db.Uuid
+  userId       String @unique @db.Uuid
+  maxInstances Int    @default(3)
+  maxMemoryMb  Int    @default(2048)
+  maxCpuCores  Float  @default(2.0)
+  maxDiskGb    Int    @default(20)
+  user         User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model GameServerInstance {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  containerId String?
+  name        String
+  gameType    GameType
+  status      InstanceStatus @default(STOPPED)
+  port        Int?
+  rconPort    Int?
+  memoryMb    Int
+  cpuCores    Float
+  diskGb      Int
+  env         Json           @default("{}")
+  installLogs String?
+  startedAt   DateTime?
+  stoppedAt   DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  backups     InstanceBackup[]
+}
+
+model WebInstance {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  containerId String?
+  name        String
+  domain      String?        @unique
+  status      InstanceStatus @default(STOPPED)
+  techStack   WebStack
+  memoryMb    Int
+  diskGb      Int
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InstanceBackup {
+  id         String             @id @default(uuid()) @db.Uuid
+  instanceId String             @db.Uuid
+  path       String
+  sizeBytes  BigInt
+  status     BackupStatus       @default(IN_PROGRESS)
+  createdAt  DateTime           @default(now())
+  instance   GameServerInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  action    String
+  resource  String
+  details   Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ContainerOwnership {
@@ -23,4 +97,45 @@ model ContainerOwnership {
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, containerId])
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  VIEWER
+}
+
+enum GameType {
+  MINECRAFT_JAVA
+  MINECRAFT_BEDROCK
+  VALHEIM
+  TERRARIA
+  SATISFACTORY
+  ARK
+  CSGO
+  CUSTOM
+}
+
+enum InstanceStatus {
+  INSTALLING
+  STOPPED
+  STARTING
+  RUNNING
+  STOPPING
+  CRASHED
+  ERROR
+}
+
+enum WebStack {
+  NGINX_STATIC
+  NODE_JS
+  PYTHON_WSGI
+  PHP_FPM
+  CUSTOM
+}
+
+enum BackupStatus {
+  IN_PROGRESS
+  COMPLETED
+  FAILED
 }

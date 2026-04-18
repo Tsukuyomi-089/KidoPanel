@@ -3,7 +3,11 @@ import bcrypt from "bcrypt";
 import { SignJWT } from "jose";
 import type { UserRepository } from "./user-repository.prisma.js";
 import { versUtilisateurPublic } from "./user.repository.js";
-import type { UtilisateurPublic, UtilisateurStocke } from "./user.types.js";
+import type {
+  RoleUtilisateurKidoPanel,
+  UtilisateurPublic,
+  UtilisateurStocke,
+} from "./user.types.js";
 
 export type ResultatAuth = {
   jeton: string;
@@ -26,12 +30,14 @@ function ligneVersStocke(ligne: {
   email: string;
   password: string;
   createdAt: Date;
+  role: RoleUtilisateurKidoPanel;
 }): UtilisateurStocke {
   return {
     id: ligne.id,
     emailNormalise: ligne.email,
     hashMotDePasse: ligne.password,
     creeLeIso: ligne.createdAt.toISOString(),
+    role: ligne.role,
   };
 }
 
@@ -54,10 +60,13 @@ export class ServiceAuth {
       this.params.coutBcrypt,
     );
     const id = randomUUID();
+    const nombreComptesExistants =
+      await this.params.userRepository.compter();
     const cree = await this.params.userRepository.create({
       id,
       email: emailNormalise,
       password: hashMotDePasse,
+      ...(nombreComptesExistants === 0 ? { role: "ADMIN" as const } : {}),
     });
     const stocke = ligneVersStocke(cree);
     const publicU = versUtilisateurPublic(stocke);
@@ -85,7 +94,10 @@ export class ServiceAuth {
   }
 
   private async signerJeton(utilisateur: UtilisateurPublic): Promise<string> {
-    return new SignJWT({ email: utilisateur.email })
+    return new SignJWT({
+      email: utilisateur.email,
+      role: utilisateur.role,
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setSubject(utilisateur.id)
       .setIssuedAt()

@@ -1,12 +1,15 @@
 import {
   PrismaClientKnownRequestError,
   type PrismaClient,
+  type UserRole,
 } from "@kidopanel/database";
 
 export type DonneesCreationUtilisateur = {
   id: string;
   email: string;
   password: string;
+  /** Rôle initial ; défaut métier ADMIN uniquement pour le tout premier compte créé dans la base vide. */
+  role?: UserRole;
 };
 
 /**
@@ -19,6 +22,11 @@ export class UserRepository {
     return this.db.user.findUnique({ where: { email } });
   }
 
+  /** Compte les comptes persistés pour décider du rôle du premier administrateur créé automatiquement. */
+  async compter(): Promise<number> {
+    return this.db.user.count();
+  }
+
   async create(donnees: DonneesCreationUtilisateur) {
     try {
       return await this.db.user.create({
@@ -26,6 +34,8 @@ export class UserRepository {
           id: donnees.id,
           email: donnees.email,
           password: donnees.password,
+          ...(donnees.role !== undefined ? { role: donnees.role } : {}),
+          quotas: { create: {} },
         },
       });
     } catch (brut: unknown) {

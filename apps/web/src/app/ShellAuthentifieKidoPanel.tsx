@@ -3,6 +3,7 @@ import { EnteteSessionKidoPanel } from "../interface/EnteteSessionKidoPanel.js";
 import { RailNavigationKidoPanel } from "../interface/RailNavigationKidoPanel.js";
 import { effacerToutJetonPasserelle } from "../passerelle/jetonPasserelleStockage.js";
 import { extraireEmailDepuisJetonClient } from "../passerelle/lectureEmailJetonClient.js";
+import { extraireRoleDepuisJetonClient } from "../passerelle/lectureRoleJetonClient.js";
 import { lireJetonStockage } from "../lab/passerelleClient.js";
 
 /**
@@ -12,10 +13,12 @@ export function ShellAuthentifieKidoPanel() {
   const navigate = useNavigate();
   const jeton = lireJetonStockage();
   const emailAffiche = extraireEmailDepuisJetonClient(jeton) ?? "Compte authentifié";
+  const roleSession = extraireRoleDepuisJetonClient(jeton);
 
   return (
     <div className="fond-app-kido kidopanel-app-root">
       <RailNavigationKidoPanel
+        roleSession={roleSession}
         surDeconnexion={() => {
           effacerToutJetonPasserelle();
           void navigate("/connexion", { replace: true });

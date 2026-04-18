@@ -1,9 +1,13 @@
 import type { Context } from "hono";
 import type { ContainerOwnershipRepository } from "../../auth/container-ownership-repository.prisma.js";
 import {
-  filtrerConteneursParProprieteUtilisateur,
-  verifyContainerOwnership,
+  filtrerConteneursVisiblesPourUtilisateur,
+  verifierAccesUtilisateurAuConteneur,
 } from "../../auth/verify-container-ownership.js";
+import {
+  estRoleAdministrateur,
+  estRoleLectureSeule,
+} from "../../auth/autorisation-role.middleware.js";
 import type { UtilisateurPublic } from "../../auth/user.types.js";
 import { journaliserPasserelle } from "../../observabilite/journal-json.js";
 import { forwardRequestToContainerEngine } from "../proxy/container-engine-proxy.js";
@@ -107,9 +111,9 @@ export async function proxyListeConteneursGet(
       typeof (entree as { id?: unknown }).id === "string" &&
       (entree as { id: string }).id.length > 0,
   );
-  const filtrees = await filtrerConteneursParProprieteUtilisateur(
+  const filtrees = await filtrerConteneursVisiblesPourUtilisateur(
     depotPropriete,
-    utilisateur.id,
+    utilisateur,
     liste,
   );
   return new Response(JSON.stringify({ containers: filtrees }), {
@@ -127,6 +131,19 @@ export async function proxyCreationConteneursPost(
   depotPropriete: ContainerOwnershipRepository,
 ): Promise<Response> {
   const chemin = obtenirCheminHttpPourRoutage(c);
+  if (estRoleLectureSeule(utilisateur.role)) {
+    journaliserPasserelle({
+      niveau: "warn",
+      message: "creation_conteneur_refusee_role_lecture_seule",
+      requestId: c.get("requestId"),
+      metadata: { utilisateurId: utilisateur.id },
+    });
+    return reponseJsonErreur(
+      "ROLE_INSUFFICIENT",
+      "Le rôle observateur ne permet pas de créer des instances conteneurisées.",
+      403,
+    );
+  }
   const brutCorps = await c.req.text();
   let corpsRemplacement: Uint8Array;
   if (brutCorps.trim().length === 0) {
@@ -225,9 +242,22 @@ export async function proxyConteneursAvecPropriete(
       403,
     );
   }
-  const autorise = await verifyContainerOwnership(
+  if (estRoleLectureSeule(utilisateur.role) && methode !== "GET") {
+    journaliserRefusAccesConteneur(c, {
+      raison: "role_observateur_mutation_interdite",
+      utilisateurId: utilisateur.id,
+      methodeHttp: methode,
+      chemin,
+    });
+    return reponseJsonErreur(
+      "ROLE_INSUFFICIENT",
+      "Le rôle observateur limite les actions aux lectures (journaux).",
+      403,
+    );
+  }
+  const autorise = await verifierAccesUtilisateurAuConteneur(
     depotPropriete,
-    utilisateur.id,
+    utilisateur,
     idParam,
   );
   if (!autorise) {
@@ -248,7 +278,7 @@ export async function proxyConteneursAvecPropriete(
   if (estRequeteFluxJournauxSse(methode, chemin)) {
     return proxyFluxJournauxSseAvecPropriete(
       c,
-      utilisateur.id,
+      utilisateur,
       idConteneurPourSuppression,
       depotPropriete,
     );
@@ -269,10 +299,16 @@ export async function proxyConteneursAvecPropriete(
     amont.status >= 200 &&
     amont.status < 300
   ) {
-    await depotPropriete.removeOwnershipForUser(
-      utilisateur.id,
-      idConteneurPourSuppression,
-    );
+    if (estRoleAdministrateur(utilisateur.role)) {
+      await depotPropriete.supprimerToutesProprietesPourConteneurDocker(
+        idConteneurPourSuppression,
+      );
+    } else {
+      await depotPropriete.removeOwnershipForUser(
+        utilisateur.id,
+        idConteneurPourSuppression,
+      );
+    }
   }
 
   return amont;

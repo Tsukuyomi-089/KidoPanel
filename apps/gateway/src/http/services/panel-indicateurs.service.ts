@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@kidopanel/database";
 import type { ContainerOwnershipRepository } from "../../auth/container-ownership-repository.prisma.js";
-import { filtrerConteneursParProprieteUtilisateur } from "../../auth/verify-container-ownership.js";
+import { filtrerConteneursVisiblesPourUtilisateur } from "../../auth/verify-container-ownership.js";
+import type { UtilisateurPublic } from "../../auth/user.types.js";
 import { getContainerEngineBaseUrl } from "../../config/gateway-env.js";
 import { EN_TETE_ID_REQUETE_INTERNE } from "../constantes-correlation-http.js";
 
@@ -14,7 +15,7 @@ type ReponseListeMoteur = { containers?: ResumeMoteur[] };
 export async function collecterIndicateursTableauPanel(params: {
   prisma: PrismaClient;
   depotPropriete: ContainerOwnershipRepository;
-  utilisateurId: string;
+  utilisateur: UtilisateurPublic;
   identifiantRequete: string;
 }): Promise<{
   postgresql: { joignable: boolean; latenceMs?: number; message?: string };
@@ -24,7 +25,7 @@ export async function collecterIndicateursTableauPanel(params: {
   const postgresql = await sonderPostgresql(params.prisma);
   const moteurDocker = await sonderMoteurDocker(params.identifiantRequete);
   const conteneurs = await compterConteneursUtilisateur({
-    utilisateurId: params.utilisateurId,
+    utilisateur: params.utilisateur,
     depotPropriete: params.depotPropriete,
     identifiantRequete: params.identifiantRequete,
   });
@@ -74,7 +75,7 @@ async function sonderMoteurDocker(identifiantRequete: string): Promise<{
 }
 
 async function compterConteneursUtilisateur(params: {
-  utilisateurId: string;
+  utilisateur: UtilisateurPublic;
   depotPropriete: ContainerOwnershipRepository;
   identifiantRequete: string;
 }): Promise<{ total: number; enLigne: number; horsLigne: number }> {
@@ -98,9 +99,9 @@ async function compterConteneursUtilisateur(params: {
         typeof (e as { id?: unknown }).id === "string" &&
         (e as { id: string }).id.length > 0,
     );
-    const filtrees = await filtrerConteneursParProprieteUtilisateur(
+    const filtrees = await filtrerConteneursVisiblesPourUtilisateur(
       params.depotPropriete,
-      params.utilisateurId,
+      params.utilisateur,
       normalise,
     );
     const total = filtrees.length;

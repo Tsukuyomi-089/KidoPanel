@@ -56,4 +56,17 @@ export class ContainerOwnershipRepository {
         AND LOWER(SUBSTRING(TRIM("containerId"), 1, 12)) = ${p}
     `;
   }
+
+  /**
+   * Supprime toute ligne de propriété pour l’identifiant Docker cible (préfixe 12 caractères), utilisé après suppression par un administrateur.
+   */
+  async supprimerToutesProprietesPourConteneurDocker(
+    containerId: string,
+  ): Promise<void> {
+    const p = prefixeDocker(containerId);
+    await this.db.$executeRaw`
+      DELETE FROM "ContainerOwnership"
+      WHERE LOWER(SUBSTRING(TRIM("containerId"), 1, 12)) = ${p}
+    `;
+  }
 }

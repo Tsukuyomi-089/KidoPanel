@@ -28,7 +28,12 @@ export function appliquerEnvPasserelleIntegration(): string {
  * Vide les tables utilisateur et propriété pour un jeu de tests reproductible.
  */
 export async function nettoyerBasePourTestsIntegration(): Promise<void> {
+  await prisma.instanceBackup.deleteMany();
+  await prisma.gameServerInstance.deleteMany();
+  await prisma.webInstance.deleteMany();
+  await prisma.auditLog.deleteMany();
   await prisma.containerOwnership.deleteMany();
+  await prisma.userQuota.deleteMany();
   await prisma.user.deleteMany();
 }
 

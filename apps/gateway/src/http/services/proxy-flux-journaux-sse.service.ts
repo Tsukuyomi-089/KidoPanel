@@ -1,6 +1,8 @@
 import type { Context } from "hono";
 import type { ContainerOwnershipRepository } from "../../auth/container-ownership-repository.prisma.js";
 import { verifyContainerOwnership } from "../../auth/verify-container-ownership.js";
+import { estRoleAdministrateur } from "../../auth/autorisation-role.middleware.js";
+import type { UtilisateurPublic } from "../../auth/user.types.js";
 import { journaliserPasserelle } from "../../observabilite/journal-json.js";
 import {
   decrementerFluxSsePasserelle,
@@ -16,7 +18,7 @@ const INTERVALLE_VERIF_PROPRIETE_MS = 2_000;
  */
 export async function proxyFluxJournauxSseAvecPropriete(
   c: Context<{ Variables: VariablesGateway }>,
-  utilisateurId: string,
+  utilisateur: UtilisateurPublic,
   containerId: string,
   depotPropriete: ContainerOwnershipRepository,
 ): Promise<Response> {
@@ -56,9 +58,12 @@ export async function proxyFluxJournauxSseAvecPropriete(
       if (!pompageActif) {
         return;
       }
+      if (estRoleAdministrateur(utilisateur.role)) {
+        return;
+      }
       const autorise = await verifyContainerOwnership(
         depotPropriete,
-        utilisateurId,
+        utilisateur.id,
         containerId,
       );
       if (!autorise) {

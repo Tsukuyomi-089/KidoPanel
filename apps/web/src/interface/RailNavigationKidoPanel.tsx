@@ -1,7 +1,10 @@
 import { NavLink } from "react-router-dom";
+import type { RoleUtilisateurJetonClient } from "../passerelle/lectureRoleJetonClient.js";
 
 type PropsRailNavigationKidoPanel = {
   surDeconnexion: () => void;
+  /** Rôle issu du JWT décodé côté client pour afficher les entrées réservées aux administrateurs. */
+  roleSession?: RoleUtilisateurJetonClient | null;
 };
 
 const classeLienRail = ({ isActive }: { isActive: boolean }): string =>
@@ -10,7 +13,12 @@ const classeLienRail = ({ isActive }: { isActive: boolean }): string =>
 /**
  * Rail latéral fixe : entrées de navigation métier et sortie de session regroupées pour une lecture verticale stable.
  */
-export function RailNavigationKidoPanel({ surDeconnexion }: PropsRailNavigationKidoPanel) {
+export function RailNavigationKidoPanel({
+  surDeconnexion,
+  roleSession,
+}: PropsRailNavigationKidoPanel) {
+  const afficherLiensAdministration = roleSession === "ADMIN";
+
   return (
     <aside className="kidopanel-rail" aria-label="Navigation du panel">
       <div className="kidopanel-rail__haut">
@@ -28,6 +36,16 @@ export function RailNavigationKidoPanel({ surDeconnexion }: PropsRailNavigationK
           <NavLink to="/parametres" className={classeLienRail}>
             Paramètres
           </NavLink>
+          {afficherLiensAdministration ? (
+            <>
+              <NavLink to="/admin/utilisateurs" className={classeLienRail}>
+                Utilisateurs
+              </NavLink>
+              <NavLink to="/admin/journal-audit" className={classeLienRail}>
+                Journal d’audit
+              </NavLink>
+            </>
+          ) : null}
         </nav>
       </div>
       <div className="kidopanel-rail__bas">

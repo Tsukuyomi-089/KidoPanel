@@ -32,7 +32,7 @@ export function monterRoutesPanelIndicateurs(
     const donnees = await collecterIndicateursTableauPanel({
       prisma,
       depotPropriete,
-      utilisateurId: utilisateur.id,
+      utilisateur,
       identifiantRequete: c.get("requestId"),
     });
     return c.json(donnees);
