@@ -26,6 +26,18 @@ export function PageListeServeurs() {
     }
   }, []);
 
+  const remplacerInstanceDansListe = useCallback(
+    (instance: InstanceServeurJeuxPasserelle) => {
+      setInstances((prev) => {
+        if (prev === null) {
+          return prev;
+        }
+        return prev.map((l) => (l.id === instance.id ? instance : l));
+      });
+    },
+    [],
+  );
+
   useEffect(() => {
     const id = window.setTimeout(() => {
       void charger();
@@ -70,7 +82,12 @@ export function PageListeServeurs() {
       ) : (
         <div className="kp-grille-cartes-serveurs kp-marges-haut-sm">
           {instances.map((inst) => (
-            <CarteServeur key={inst.id} instance={inst} surMiseAJourListe={charger} />
+            <CarteServeur
+              key={inst.id}
+              instance={inst}
+              surMiseAJourListe={charger}
+              surMiseAJourPartielle={remplacerInstanceDansListe}
+            />
           ))}
         </div>
       )}

@@ -5,6 +5,9 @@ export type {
   UserRole,
   GameType,
   InstanceStatus,
+  WebStack,
   GameServerInstance,
+  WebInstance,
+  DomaineProxy,
 } from "@prisma/client";
 export { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";

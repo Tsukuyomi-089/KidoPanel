@@ -9,9 +9,9 @@ export type OptionsFluxJournauxConteneur = {
   jetonBearer: string;
   actif: boolean;
   /**
-   * `instanceServeurJeu` : flux `GET /serveurs-jeux/instances/:id/logs/stream` ; sinon flux conteneur Docker classique.
+   * `instanceServeurJeu` : flux instances jeu ; `instanceWeb` : flux instances web ; sinon flux conteneur Docker classique.
    */
-  varianteFlux?: "coeurDocker" | "instanceServeurJeu";
+  varianteFlux?: "coeurDocker" | "instanceServeurJeu" | "instanceWeb";
   tailEntrees?: number;
   horodatageDocker?: boolean;
   lignesMaxAffichage?: number;
@@ -116,7 +116,9 @@ export function useFluxJournauxConteneur(
       const cheminFlux =
         varianteFlux === "instanceServeurJeu"
           ? `${base}/serveurs-jeux/instances/${encodeURIComponent(idConteneur)}/logs/stream`
-          : `${base}/containers/${encodeURIComponent(idConteneur)}/logs/stream`;
+          : varianteFlux === "instanceWeb"
+            ? `${base}/web-instances/${encodeURIComponent(idConteneur)}/logs/stream`
+            : `${base}/containers/${encodeURIComponent(idConteneur)}/logs/stream`;
       const url = new URL(cheminFlux);
       if (tailEntrees !== undefined) {
         url.searchParams.set("tail", String(tailEntrees));

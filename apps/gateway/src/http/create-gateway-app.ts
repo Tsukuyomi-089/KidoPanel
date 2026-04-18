@@ -9,6 +9,8 @@ import {
   loadGatewayEnv,
 } from "../config/gateway-env.js";
 import { monterRoutesServeursJeuSiConfigure } from "./routes/serveurs-jeu-proxy.routes.js";
+import { monterRoutesWebInstancesPasserelle } from "./routes/web-instances-proxy.routes.js";
+import { monterRoutesProxyManagerPasserelle } from "./routes/proxy-manager-passerelle.routes.js";
 import { monterRoutesReseauxInternesPasserelle } from "./routes/reseaux-internes-passerelle.routes.js";
 import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
@@ -61,6 +63,8 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
     secretJwt,
     env.serverServiceBaseUrl,
   );
+  monterRoutesWebInstancesPasserelle(app, secretJwt, env.webServiceBaseUrl);
+  monterRoutesProxyManagerPasserelle(app, secretJwt, env.webServiceBaseUrl);
 
   app.notFound((c) =>
     c.json(

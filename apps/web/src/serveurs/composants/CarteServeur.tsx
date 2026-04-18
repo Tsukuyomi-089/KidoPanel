@@ -17,6 +17,8 @@ import { statutBadgeDepuisChaineApi } from "../../interface/statutBadgeInstanceJ
 type PropsCarteServeur = {
   instance: InstanceServeurJeuxPasserelle;
   surMiseAJourListe: () => void;
+  /** Remplace une ligne sans recharger toute la liste après une action de pilotage. */
+  surMiseAJourPartielle?: (instance: InstanceServeurJeuxPasserelle) => void;
 };
 
 function classeCarteServeurPourStatut(statut: ReturnType<typeof statutBadgeDepuisChaineApi>): string {
@@ -24,7 +26,11 @@ function classeCarteServeurPourStatut(statut: ReturnType<typeof statutBadgeDepui
 }
 
 /** Carte récapitulative d’une instance jeu avec pilotage rapide et liens utiles. */
-export function CarteServeur({ instance, surMiseAJourListe }: PropsCarteServeur) {
+export function CarteServeur({
+  instance,
+  surMiseAJourListe,
+  surMiseAJourPartielle,
+}: PropsCarteServeur) {
   const { pousserToast } = useToastKidoPanel();
   const statutBadge = statutBadgeDepuisChaineApi(instance.status);
   const [patient, setPatient] = useState(false);
@@ -35,8 +41,12 @@ export function CarteServeur({ instance, surMiseAJourListe }: PropsCarteServeur)
     evt.stopPropagation();
     setPatient(true);
     try {
-      await demarrerInstanceServeurJeuxPasserelle(instance.id);
-      surMiseAJourListe();
+      const maj = await demarrerInstanceServeurJeuxPasserelle(instance.id);
+      if (surMiseAJourPartielle !== undefined) {
+        surMiseAJourPartielle(maj);
+      } else {
+        surMiseAJourListe();
+      }
       pousserToast("Ordre de démarrage envoyé.", "succes");
     } catch (e) {
       pousserToast(e instanceof Error ? e.message : "Démarrage impossible.", "erreur");
@@ -50,8 +60,12 @@ export function CarteServeur({ instance, surMiseAJourListe }: PropsCarteServeur)
     evt.stopPropagation();
     setPatient(true);
     try {
-      await arreterInstanceServeurJeuxPasserelle(instance.id);
-      surMiseAJourListe();
+      const maj = await arreterInstanceServeurJeuxPasserelle(instance.id);
+      if (surMiseAJourPartielle !== undefined) {
+        surMiseAJourPartielle(maj);
+      } else {
+        surMiseAJourListe();
+      }
       pousserToast("Ordre d’arrêt envoyé.", "succes");
     } catch (e) {
       pousserToast(e instanceof Error ? e.message : "Arrêt impossible.", "erreur");
@@ -91,32 +105,40 @@ export function CarteServeur({ instance, surMiseAJourListe }: PropsCarteServeur)
       </p>
 
       <div className="kp-carte-serveur__actions">
-        <button
-          type="button"
-          className="kp-btn-ico"
-          disabled={patient}
-          aria-label="Démarrer l’instance"
-          onClick={executerDemarrage}
-        >
-          <IcoDemarrer size={15} />
-        </button>
-        <button
-          type="button"
-          className="kp-btn-ico"
-          disabled={patient}
-          aria-label="Arrêter l’instance"
-          onClick={executerArret}
-        >
-          <IcoArret size={14} />
-        </button>
-        <Link
-          to={cheminDetail}
-          className="kp-btn-ico"
-          aria-label="Ouvrir la console"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <IcoConsoleJeux size={15} />
-        </Link>
+        {(instance.status === "STOPPED" ||
+          instance.status === "ERROR" ||
+          instance.status === "CRASHED") ? (
+          <button
+            type="button"
+            className="kp-btn-ico"
+            disabled={patient}
+            aria-label="Démarrer l’instance"
+            onClick={executerDemarrage}
+          >
+            <IcoDemarrer size={15} />
+          </button>
+        ) : null}
+        {instance.status === "RUNNING" ? (
+          <button
+            type="button"
+            className="kp-btn-ico"
+            disabled={patient}
+            aria-label="Arrêter l’instance"
+            onClick={executerArret}
+          >
+            <IcoArret size={14} />
+          </button>
+        ) : null}
+        {instance.status !== "INSTALLING" ? (
+          <Link
+            to={cheminDetail}
+            className="kp-btn-ico"
+            aria-label="Voir le détail et la console"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <IcoConsoleJeux size={15} />
+          </Link>
+        ) : null}
       </div>
     </article>
   );

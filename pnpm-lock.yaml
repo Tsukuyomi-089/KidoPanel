@@ -203,6 +203,34 @@ importers:
         specifier: ^6.0.2
         version: 6.0.2
 
+  services/web-service:
+    dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.13
+        version: 1.19.13(hono@4.12.12)
+      '@hono/zod-validator':
+        specifier: ^0.7.6
+        version: 0.7.6(hono@4.12.12)(zod@4.3.6)
+      '@kidopanel/container-catalog':
+        specifier: workspace:*
+        version: link:../../packages/container-catalog
+      '@kidopanel/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      hono:
+        specifier: ^4.12.12
+        version: 4.12.12
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.2
+        version: 24.12.2
+      typescript:
+        specifier: ^6.0.2
+        version: 6.0.2
+
 packages:
 
   '@babel/code-frame@7.29.0':

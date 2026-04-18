@@ -1,0 +1,34 @@
+{
+  "name": "web-service",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Orchestration des instances web et du proxy Nginx via Prisma et le container-engine HTTP (sans Docker direct)",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "dev": "tsc && (tsc --watch --preserveWatchOutput & node --watch dist/main.js)",
+    "lint": "node -e \"\"",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@kidopanel/container-catalog": "workspace:*",
+    "@kidopanel/database": "workspace:*",
+    "@hono/node-server": "^1.19.13",
+    "@hono/zod-validator": "^0.7.6",
+    "hono": "^4.12.12",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.12.2",
+    "typescript": "^6.0.2"
+  }
+}

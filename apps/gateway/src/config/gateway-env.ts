@@ -18,9 +18,15 @@ export type GatewayEnv = {
    * Définir `SERVER_SERVICE_DISABLED=1` pour désactiver explicitement le relais `/serveurs-jeux`.
    */
   serverServiceBaseUrl: string | undefined;
+  /**
+   * URL de base du service web (instances applicatives + proxy) : par défaut `http://127.0.0.1:8791`.
+   * `WEB_SERVICE_DISABLED=1` ou `true` désactive les relais `/web-instances` et `/proxy`.
+   */
+  webServiceBaseUrl: string | undefined;
 };
 
 const URL_SERVEUR_JEUX_LOCAL_PAR_DEFAUT = "http://127.0.0.1:8790";
+const URL_SERVICE_WEB_LOCAL_PAR_DEFAUT = "http://127.0.0.1:8791";
 
 /** Retourne l’URL de base du container-engine, sans barre oblique finale. */
 export function getContainerEngineBaseUrl(): string {
@@ -73,6 +79,19 @@ export function loadGatewayEnv(): GatewayEnv {
     serverServiceBaseUrl = URL_SERVEUR_JEUX_LOCAL_PAR_DEFAUT;
   }
 
+  const serviceWebBrut = process.env.WEB_SERVICE_BASE_URL?.trim();
+  const serviceWebDesactive =
+    process.env.WEB_SERVICE_DISABLED?.trim() === "1" ||
+    process.env.WEB_SERVICE_DISABLED?.trim()?.toLowerCase() === "true";
+  let webServiceBaseUrl: string | undefined;
+  if (serviceWebDesactive) {
+    webServiceBaseUrl = undefined;
+  } else if (typeof serviceWebBrut === "string" && serviceWebBrut.length > 0) {
+    webServiceBaseUrl = serviceWebBrut.replace(/\/+$/, "");
+  } else {
+    webServiceBaseUrl = URL_SERVICE_WEB_LOCAL_PAR_DEFAUT;
+  }
+
   return {
     rateLimitMax: Number.isFinite(max) && max > 0 ? max : 120,
     rateLimitWindowMs:
@@ -85,5 +104,6 @@ export function loadGatewayEnv(): GatewayEnv {
         : 12,
     databaseUrl,
     serverServiceBaseUrl,
+    webServiceBaseUrl,
   };
 }

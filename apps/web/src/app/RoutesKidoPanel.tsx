@@ -16,6 +16,13 @@ import { PageCreationServeur } from "../serveurs/PageCreationServeur.js";
 import { PageDetailServeur } from "../serveurs/PageDetailServeur.js";
 import { PageListeServeurs } from "../serveurs/PageListeServeurs.js";
 import { PageHebergementWebKidoPanel } from "../hebergement/PageHebergementWebKidoPanel.js";
+import { PageListeWebInstances } from "../hebergement/PageListeWebInstances.js";
+import { PageCreationWebInstance } from "../hebergement/PageCreationWebInstance.js";
+import { PageDetailWebInstance } from "../hebergement/PageDetailWebInstance.js";
+import { PageProxyManager } from "../hebergement/PageProxyManager.js";
+import { PageAjouterDomaine } from "../hebergement/PageAjouterDomaine.js";
+import { PageListeReseaux } from "../reseaux/PageListeReseaux.js";
+import { PageCreationReseau } from "../reseaux/PageCreationReseau.js";
 
 function PageAccueilAvecEmail() {
   return <PageTableauBordKidoPanel />;
@@ -32,6 +39,13 @@ export function RoutesKidoPanel() {
         <Route element={<ShellAuthentifieKidoPanel />}>
           <Route index element={<PageAccueilAvecEmail />} />
           <Route path="hebergement" element={<PageHebergementWebKidoPanel />} />
+          <Route path="hebergement/containers" element={<PageListeWebInstances />} />
+          <Route path="hebergement/containers/nouveau" element={<PageCreationWebInstance />} />
+          <Route path="hebergement/containers/:idInstance" element={<PageDetailWebInstance />} />
+          <Route path="hebergement/proxy" element={<PageProxyManager />} />
+          <Route path="hebergement/proxy/nouveau" element={<PageAjouterDomaine />} />
+          <Route path="reseaux" element={<PageListeReseaux />} />
+          <Route path="reseaux/nouveau" element={<PageCreationReseau />} />
           <Route path="serveurs" element={<PageListeServeurs />} />
           <Route path="serveurs/nouveau" element={<PageCreationServeur />} />
           <Route path="serveurs/:idInstance" element={<PageDetailServeur />} />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import type { RoleUtilisateurJetonClient } from "../passerelle/lectureRoleJetonClient.js";
 import { listerInstancesServeursJeuxPasserelle } from "../passerelle/serviceServeursJeuxPasserelle.js";
 import { IcoAudit } from "./icones/IcoAudit.js";
@@ -10,6 +10,9 @@ import { IcoParametres } from "./icones/IcoParametres.js";
 import { IcoServeurs } from "./icones/IcoServeurs.js";
 import { IcoTableauBord } from "./icones/IcoTableauBord.js";
 import { IcoUtilisateurs } from "./icones/IcoUtilisateurs.js";
+import { IcoReseau } from "./icones/IcoReseau.js";
+import { IcoContainer } from "./icones/IcoContainer.js";
+import { IcoProxy } from "./icones/IcoProxy.js";
 
 type PropsRailNavigationKidoPanel = {
   surDeconnexion: () => void;
@@ -40,6 +43,8 @@ export function RailNavigationKidoPanel({
   const [nombreServeursJeux, setNombreServeursJeux] = useState<number | undefined>(
     undefined,
   );
+  const emplacement = useLocation();
+  const hebergementActif = emplacement.pathname.startsWith("/hebergement");
 
   useEffect(() => {
     let vivant = true;
@@ -70,7 +75,7 @@ export function RailNavigationKidoPanel({
       </NavLink>
 
       <div className="kp-sidebar__section">
-        <div className="kp-sidebar__section-label">Navigation principale</div>
+        <div className="kp-sidebar__section-label">Principal</div>
         <nav className="kp-sidebar__liste" aria-label="Sections principales">
           <NavLink to="/" end className={classeLienRail}>
             <IcoTableauBord className="kp-sidebar__lien-icone" />
@@ -87,8 +92,28 @@ export function RailNavigationKidoPanel({
             <IcoHebergement className="kp-sidebar__lien-icone" />
             Hébergement web
           </NavLink>
+          <NavLink to="/reseaux" className={classeLienRail}>
+            <IcoReseau className="kp-sidebar__lien-icone" />
+            Réseaux
+          </NavLink>
         </nav>
       </div>
+
+      {hebergementActif ? (
+        <div className="kp-sidebar__section">
+          <div className="kp-sidebar__section-label">Hébergement web</div>
+          <nav className="kp-sidebar__liste" aria-label="Hébergement web">
+            <NavLink to="/hebergement/containers" className={classeLienRail}>
+              <IcoContainer className="kp-sidebar__lien-icone" />
+              Mes containers
+            </NavLink>
+            <NavLink to="/hebergement/proxy" className={classeLienRail}>
+              <IcoProxy className="kp-sidebar__lien-icone" />
+              Proxy Manager
+            </NavLink>
+          </nav>
+        </div>
+      ) : null}
 
       <div className="kp-sidebar__section">
         <div className="kp-sidebar__section-label">Avancé</div>

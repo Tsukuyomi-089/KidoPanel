@@ -8,6 +8,7 @@ import {
   containerIdParamSchema,
   containerLogsQuerySchema,
   createContainerJsonSchema,
+  execConteneurJsonSchema,
   listContainersQuerySchema,
   removeContainerQuerySchema,
   stopContainerJsonSchema,
@@ -193,6 +194,37 @@ export function mountContainerRoutes(
           timestamps: query.timestamps,
         });
         return c.json({ logs });
+      } catch (err) {
+        const response = tryRespondWithEngineError(c, err);
+        if (response) return response;
+        throw err;
+      }
+    },
+  );
+
+  app.post(
+    "/containers/:id/exec",
+    zValidator("param", containerIdParamSchema),
+    zValidator("json", execConteneurJsonSchema),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const corps = c.req.valid("json");
+      try {
+        const resultat = await engine.executerCommandeDansConteneur(
+          id,
+          corps.cmd,
+          corps.stdinUtf8,
+        );
+        journaliserMoteur({
+          niveau: "info",
+          message: "conteneur_exec_termine",
+          requestId: c.get("requestId"),
+          metadata: {
+            idConteneur: id,
+            exitCode: resultat.exitCode,
+          },
+        });
+        return c.json(resultat);
       } catch (err) {
         const response = tryRespondWithEngineError(c, err);
         if (response) return response;

@@ -35,6 +35,10 @@ import {
 } from "./journaux-fichier-conteneur/journaux-fichier-conteneur.service.js";
 import { mapEntreeListeDockerVersResume } from "./conteneur-liste-docker.mapper.js";
 import {
+  executerCommandeDansConteneurDocker,
+  type ResultatExecConteneurDocker,
+} from "./docker/exec-commande-conteneur-docker.service.js";
+import {
   construireSuggestionConfigurationDepuisInspectionImage,
   type SuggestionConfigurationImageDocker,
 } from "./docker/suggestion-config-depuis-image.service.js";
@@ -97,6 +101,26 @@ export class ContainerEngine {
     try {
       const container = this.docker.getContainer(id);
       return await container.inspect();
+    } catch (e) {
+      wrapDockerError(e);
+    }
+  }
+
+  /**
+   * Exécute une commande dans le conteneur (configuration générée, rechargement Nginx, etc.).
+   */
+  async executerCommandeDansConteneur(
+    id: string,
+    cmd: readonly string[],
+    stdinUtf8?: string,
+  ): Promise<ResultatExecConteneurDocker> {
+    try {
+      return await executerCommandeDansConteneurDocker(
+        this.docker,
+        id,
+        cmd,
+        stdinUtf8,
+      );
     } catch (e) {
       wrapDockerError(e);
     }

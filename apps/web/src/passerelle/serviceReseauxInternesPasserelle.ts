@@ -56,3 +56,86 @@ export async function listerReseauxInternesPasserelle(): Promise<
     throw new Error(formaterErreurReseauFetch(url, erreur));
   }
 }
+
+export type CorpsCreationReseauInternePasserelle = {
+  nomAffichage: string;
+  sousReseauCidr: string;
+  sansRouteVersInternetExterne?: boolean;
+};
+
+function assemblerUrlReseaux(idOptionnel?: string): string {
+  const base = urlBasePasserelle().replace(/\/$/, "");
+  if (idOptionnel === undefined || idOptionnel.length === 0) {
+    return `${base}/reseaux-internes`;
+  }
+  return `${base}/reseaux-internes/${encodeURIComponent(idOptionnel)}`;
+}
+
+async function fetchJsonReseaux(url: string, init: RequestInit): Promise<Response> {
+  const jeton = lireJetonPasserelle().trim();
+  if (!jeton) {
+    throw new Error("Jeton d’accès absent : reconnectez-vous au panel.");
+  }
+  try {
+    return await fetch(url, {
+      ...init,
+      mode: "cors",
+      cache: "no-store",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${jeton}`,
+        ...init.headers,
+      },
+    });
+  } catch (erreur) {
+    throw new Error(formaterErreurReseauFetch(url, erreur));
+  }
+}
+
+/** Crée un pont utilisateur (`POST /reseaux-internes`). */
+export async function creerReseauInternePasserelle(
+  corps: CorpsCreationReseauInternePasserelle,
+): Promise<EnregistrementReseauInternePasserelle> {
+  const reponse = await fetchJsonReseaux(assemblerUrlReseaux(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(corps),
+  });
+  const json = (await reponse.json()) as unknown;
+  if (!reponse.ok) {
+    const msg =
+      typeof json === "object" &&
+      json !== null &&
+      "error" in json &&
+      typeof (json as { error?: { message?: unknown } }).error?.message === "string"
+        ? (json as { error: { message: string } }).error.message
+        : `Erreur HTTP ${String(reponse.status)}`;
+    throw new Error(msg);
+  }
+  if (
+    typeof json !== "object" ||
+    json === null ||
+    !("reseauInterne" in json)
+  ) {
+    throw new Error("Réponse création réseau illisible.");
+  }
+  return (json as { reseauInterne: EnregistrementReseauInternePasserelle }).reseauInterne;
+}
+
+/** Supprime un réseau sans instance rattachée. */
+export async function supprimerReseauInternePasserelle(idReseau: string): Promise<void> {
+  const reponse = await fetchJsonReseaux(assemblerUrlReseaux(idReseau), {
+    method: "DELETE",
+  });
+  if (!reponse.ok) {
+    const json = (await reponse.json().catch(() => null)) as unknown;
+    const msg =
+      typeof json === "object" &&
+      json !== null &&
+      "error" in json &&
+      typeof (json as { error?: { message?: unknown } }).error?.message === "string"
+        ? (json as { error: { message: string } }).error.message
+        : `Erreur HTTP ${String(reponse.status)}`;
+    throw new Error(msg);
+  }
+}

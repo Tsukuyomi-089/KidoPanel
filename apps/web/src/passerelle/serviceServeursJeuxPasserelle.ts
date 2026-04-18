@@ -12,6 +12,7 @@ export type InstanceServeurJeuxPasserelle = {
   memoryMb: number;
   cpuCores: number;
   diskGb: number;
+  reseauInterneUtilisateurId?: string | null;
 };
 
 function assemblerUrl(cheminRelatif: string): string {
@@ -153,6 +154,53 @@ export async function arreterInstanceServeurJeuxPasserelle(
     throw new Error(msg);
   }
   return json as InstanceServeurJeuxPasserelle;
+}
+
+/** Demande le redémarrage du conteneur associé à une instance jeu. */
+export async function redemarrerInstanceServeurJeuxPasserelle(
+  idInstance: string,
+): Promise<InstanceServeurJeuxPasserelle> {
+  const reponse = await appelerJsonAuthentifie(
+    `/serveurs-jeux/instances/${encodeURIComponent(idInstance)}/restart`,
+    { method: "POST" },
+  );
+  const json = (await reponse.json()) as unknown;
+  if (!reponse.ok) {
+    const msg =
+      typeof json === "object" &&
+      json !== null &&
+      "error" in json &&
+      typeof (json as { error?: { message?: unknown } }).error?.message === "string"
+        ? (json as { error: { message: string } }).error.message
+        : `Erreur HTTP ${String(reponse.status)}`;
+    throw new Error(msg);
+  }
+  return json as InstanceServeurJeuxPasserelle;
+}
+
+/** Supprime définitivement une instance jeu et son conteneur orchestré côté moteur. */
+export async function supprimerInstanceServeurJeuxPasserelle(idInstance: string): Promise<void> {
+  const reponse = await appelerJsonAuthentifie(
+    `/serveurs-jeux/instances/${encodeURIComponent(idInstance)}`,
+    { method: "DELETE" },
+  );
+  if (!reponse.ok) {
+    let msg = `Erreur HTTP ${String(reponse.status)}`;
+    try {
+      const json = (await reponse.json()) as unknown;
+      if (
+        typeof json === "object" &&
+        json !== null &&
+        "error" in json &&
+        typeof (json as { error?: { message?: unknown } }).error?.message === "string"
+      ) {
+        msg = (json as { error: { message: string } }).error.message;
+      }
+    } catch {
+      /* conserve msg par défaut */
+    }
+    throw new Error(msg);
+  }
 }
 
 export async function creerInstanceServeurJeuxPasserelle(
