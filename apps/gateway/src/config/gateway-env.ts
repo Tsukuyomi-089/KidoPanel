@@ -13,6 +13,10 @@ export type GatewayEnv = {
   bcryptCost: number;
   /** Chaîne de connexion Prisma vers PostgreSQL (utilisateurs et propriétés de conteneurs). */
   databaseUrl: string;
+  /**
+   * URL de base du service instances jeu (optionnel) : si absente, le relais `/serveurs-jeux` n’est pas exposé.
+   */
+  serverServiceBaseUrl: string | undefined;
 };
 
 /** Retourne l’URL de base du container-engine, sans barre oblique finale. */
@@ -49,6 +53,7 @@ export function loadGatewayEnv(): GatewayEnv {
   }
   const exp = Number(process.env.GATEWAY_JWT_EXPIRES_SECONDS ?? "86400");
   const bcryptCost = Number(process.env.GATEWAY_BCRYPT_COST ?? "12");
+  const serveurJeuxBrut = process.env.SERVER_SERVICE_BASE_URL?.trim();
   return {
     rateLimitMax: Number.isFinite(max) && max > 0 ? max : 120,
     rateLimitWindowMs:
@@ -60,5 +65,8 @@ export function loadGatewayEnv(): GatewayEnv {
         ? bcryptCost
         : 12,
     databaseUrl,
+    serverServiceBaseUrl: serveurJeuxBrut
+      ? serveurJeuxBrut.replace(/\/+$/, "")
+      : undefined,
   };
 }

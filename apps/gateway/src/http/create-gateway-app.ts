@@ -7,6 +7,7 @@ import {
   encoderSecretJwt,
   loadGatewayEnv,
 } from "../config/gateway-env.js";
+import { monterRoutesServeursJeuSiConfigure } from "./routes/serveurs-jeu-proxy.routes.js";
 import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
 import { monterRouteCatalogueImagesPasserelle } from "./routes/images-catalogue-passerelle.routes.js";
@@ -51,6 +52,11 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
   monterRouteCatalogueImagesPasserelle(app, secretJwt);
   monterRouteTemplatesCataloguePasserelle(app, secretJwt);
+  monterRoutesServeursJeuSiConfigure(
+    app,
+    secretJwt,
+    env.serverServiceBaseUrl,
+  );
 
   app.notFound((c) =>
     c.json(

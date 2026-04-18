@@ -93,3 +93,10 @@ export function trouverTemplateParId(
 ): InstanceTemplate | undefined {
   return indexParIdentifiantModele.get(identifiant.trim());
 }
+
+export {
+  listeGabaritsJeuCatalogue,
+  LISTE_GABARITS_JEU_INSTANCE,
+  trouverGabaritJeuParId,
+  type GabaritJeuCatalogueInstance,
+} from "./gabarits-jeux-catalogue.js";

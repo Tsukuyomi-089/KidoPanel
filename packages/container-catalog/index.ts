@@ -18,4 +18,10 @@ export {
   type CategorieModeleInstance,
   type InstanceTemplate,
 } from "./templates.js";
+export {
+  listeGabaritsJeuCatalogue,
+  LISTE_GABARITS_JEU_INSTANCE,
+  trouverGabaritJeuParId,
+  type GabaritJeuCatalogueInstance,
+} from "./gabarits-jeux-catalogue.js";
 export { analyserReferenceDockerLibre } from "./validation-reference-docker-libre.js";

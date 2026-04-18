@@ -1,0 +1,293 @@
+import { randomUUID } from "node:crypto";
+import type { GameType } from "@kidopanel/database";
+import { Prisma } from "@kidopanel/database";
+import type { DepotInstanceServeur } from "../repositories/depot-instance-serveur.repository.js";
+import type { ClientMoteurConteneursHttp } from "./client-moteur-conteneurs-http.service.js";
+import { resoudreGabaritJeuPourType } from "./mappage-gabarit-type-jeu.service.js";
+import { validerEtFusionnerVariablesEnvJeux } from "./installateur-variables-env-jeu.service.js";
+import { ErreurMetierInstanceJeux } from "../erreurs/erreurs-metier-instance-jeu.js";
+import { finaliserInstallationConteneurDockerInstanceJeux } from "./finalisation-installation-docker-instance-jeu.service.js";
+
+type RoleInterne = "ADMIN" | "USER" | "VIEWER";
+
+function peutGererInstance(
+  role: RoleInterne,
+  utilisateurCourantId: string,
+  proprietaireInstanceId: string,
+): boolean {
+  if (role === "ADMIN") {
+    return true;
+  }
+  return proprietaireInstanceId === utilisateurCourantId;
+}
+
+/**
+ * Orchestre création Docker via le moteur HTTP et synchronise les statuts Prisma.
+ */
+export class CycleVieInstanceServeur {
+  constructor(
+    private readonly depot: DepotInstanceServeur,
+    private readonly clientMoteur: ClientMoteurConteneursHttp,
+  ) {}
+
+  async listerPourIdentiteInterne(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+  }) {
+    if (params.role === "ADMIN") {
+      return this.depot.listerTous();
+    }
+    return this.depot.listerParUtilisateur(params.utilisateurId);
+  }
+
+  async obtenirDetailPourIdentiteInterne(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+    instanceId: string;
+  }) {
+    const ligne = await this.depot.trouverParId(params.instanceId);
+    if (!ligne) {
+      throw new ErreurMetierInstanceJeux(
+        "INSTANCE_JEU_NON_TROUVEE",
+        "Instance introuvable.",
+        404,
+      );
+    }
+    if (
+      !peutGererInstance(params.role, params.utilisateurId, ligne.userId)
+    ) {
+      throw new ErreurMetierInstanceJeux(
+        "INSTANCE_JEU_ACCES_REFUSE",
+        "Accès à cette instance refusé.",
+        403,
+      );
+    }
+    return ligne;
+  }
+
+  async creerEtOrchestrerInstallation(params: {
+    utilisateurIdProprietaire: string;
+    role: RoleInterne;
+    nomBrut: string;
+    gameType: GameType;
+    memoryMb: number;
+    cpuCores: number;
+    diskGb: number;
+    variablesEnvBrutes: Record<string, string>;
+    identifiantRequeteHttp: string;
+  }) {
+    if (params.role === "VIEWER") {
+      throw new ErreurMetierInstanceJeux(
+        "ROLE_LECTURE_SEULE_MUTATION_INTERDITE",
+        "Le rôle observateur ne permet pas de créer une instance.",
+        403,
+      );
+    }
+    const gabarit = resoudreGabaritJeuPourType(params.gameType);
+    const fusionEnv = validerEtFusionnerVariablesEnvJeux({
+      gabarit,
+      variablesUtilisateur: params.variablesEnvBrutes,
+      memoireMbInstance: params.memoryMb,
+    });
+    const idInstance = randomUUID();
+    const ligne = await this.depot.creer({
+      id: idInstance,
+      userId: params.utilisateurIdProprietaire,
+      name: params.nomBrut.trim(),
+      gameType: params.gameType,
+      memoryMb: params.memoryMb,
+      cpuCores: params.cpuCores,
+      diskGb: params.diskGb,
+      env: fusionEnv as unknown as Prisma.InputJsonValue,
+      status: "INSTALLING",
+      installLogs: null,
+    });
+
+    return finaliserInstallationConteneurDockerInstanceJeux({
+      depot: this.depot,
+      clientMoteur: this.clientMoteur,
+      ligne,
+      gabarit,
+      fusionEnv,
+      identifiantRequeteHttp: params.identifiantRequeteHttp,
+    });
+  }
+
+  async redemarrer(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+    instanceId: string;
+    identifiantRequeteHttp: string;
+  }) {
+    const ligne = await this.obtenirDetailPourIdentiteInterne({
+      utilisateurId: params.utilisateurId,
+      role: params.role,
+      instanceId: params.instanceId,
+    });
+    if (params.role === "VIEWER") {
+      throw new ErreurMetierInstanceJeux(
+        "ROLE_LECTURE_SEULE_MUTATION_INTERDITE",
+        "Le rôle observateur ne permet pas de redémarrer une instance.",
+        403,
+      );
+    }
+    const idDocker = ligne.containerId;
+    if (!idDocker) {
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        "Aucun conteneur Docker associé à cette instance.",
+        409,
+      );
+    }
+    await this.depot.mettreAJour(ligne.id, { status: "STOPPING" });
+    const arret = await this.clientMoteur.posterArret(
+      idDocker,
+      params.identifiantRequeteHttp,
+    );
+    if (!arret.ok) {
+      await this.depot.mettreAJour(ligne.id, { status: "ERROR" });
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        "Impossible d’arrêter le conteneur avant redémarrage.",
+        arret.status,
+      );
+    }
+    await this.depot.mettreAJour(ligne.id, { status: "STARTING" });
+    const dem = await this.clientMoteur.posterDemarrage(
+      idDocker,
+      params.identifiantRequeteHttp,
+    );
+    const texteDem = await dem.text();
+    if (!dem.ok) {
+      await this.depot.mettreAJour(ligne.id, {
+        status: "ERROR",
+        installLogs: texteDem.slice(0, 8000),
+      });
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        "Redémarrage : échec au démarrage.",
+        dem.status,
+      );
+    }
+    return this.depot.mettreAJour(ligne.id, {
+      status: "RUNNING",
+      startedAt: new Date(),
+    });
+  }
+
+  async demarrer(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+    instanceId: string;
+    identifiantRequeteHttp: string;
+  }) {
+    const ligne = await this.obtenirDetailPourIdentiteInterne({
+      utilisateurId: params.utilisateurId,
+      role: params.role,
+      instanceId: params.instanceId,
+    });
+    if (params.role === "VIEWER") {
+      throw new ErreurMetierInstanceJeux(
+        "ROLE_LECTURE_SEULE_MUTATION_INTERDITE",
+        "Le rôle observateur ne permet pas de démarrer une instance.",
+        403,
+      );
+    }
+    const idDocker = ligne.containerId;
+    if (!idDocker) {
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        "Aucun conteneur Docker associé à cette instance.",
+        409,
+      );
+    }
+    await this.depot.mettreAJour(ligne.id, { status: "STARTING" });
+    const dem = await this.clientMoteur.posterDemarrage(
+      idDocker,
+      params.identifiantRequeteHttp,
+    );
+    const texteDem = await dem.text();
+    if (!dem.ok) {
+      await this.depot.mettreAJour(ligne.id, { status: "ERROR" });
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        texteDem.slice(0, 200),
+        dem.status,
+      );
+    }
+    return this.depot.mettreAJour(ligne.id, {
+      status: "RUNNING",
+      startedAt: new Date(),
+    });
+  }
+
+  async arreter(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+    instanceId: string;
+    identifiantRequeteHttp: string;
+  }) {
+    const ligne = await this.obtenirDetailPourIdentiteInterne({
+      utilisateurId: params.utilisateurId,
+      role: params.role,
+      instanceId: params.instanceId,
+    });
+    if (params.role === "VIEWER") {
+      throw new ErreurMetierInstanceJeux(
+        "ROLE_LECTURE_SEULE_MUTATION_INTERDITE",
+        "Le rôle observateur ne permet pas d’arrêter une instance.",
+        403,
+      );
+    }
+    const idDocker = ligne.containerId;
+    if (!idDocker) {
+      await this.depot.mettreAJour(ligne.id, { status: "STOPPED" });
+      return this.depot.trouverParId(ligne.id);
+    }
+    await this.depot.mettreAJour(ligne.id, { status: "STOPPING" });
+    const arret = await this.clientMoteur.posterArret(
+      idDocker,
+      params.identifiantRequeteHttp,
+    );
+    if (!arret.ok) {
+      await this.depot.mettreAJour(ligne.id, { status: "ERROR" });
+      throw new ErreurMetierInstanceJeux(
+        "MOTEUR_CONTENEURS_ERREUR",
+        "Arrêt du conteneur refusé par le moteur.",
+        arret.status,
+      );
+    }
+    return this.depot.mettreAJour(ligne.id, {
+      status: "STOPPED",
+      stoppedAt: new Date(),
+    });
+  }
+
+  async supprimer(params: {
+    utilisateurId: string;
+    role: RoleInterne;
+    instanceId: string;
+    identifiantRequeteHttp: string;
+  }) {
+    const ligne = await this.obtenirDetailPourIdentiteInterne({
+      utilisateurId: params.utilisateurId,
+      role: params.role,
+      instanceId: params.instanceId,
+    });
+    if (params.role === "VIEWER") {
+      throw new ErreurMetierInstanceJeux(
+        "ROLE_LECTURE_SEULE_MUTATION_INTERDITE",
+        "Le rôle observateur ne permet pas de supprimer une instance.",
+        403,
+      );
+    }
+    const idDocker = ligne.containerId;
+    if (idDocker) {
+      await this.clientMoteur.supprimerConteneur(
+        idDocker,
+        params.identifiantRequeteHttp,
+      );
+    }
+    await this.depot.supprimer(ligne.id);
+  }
+}
