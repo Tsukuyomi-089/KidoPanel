@@ -12,12 +12,12 @@ export {
   type ImageCatalogueApi,
 } from "./images-officielles.js";
 export {
-  listeTemplates,
-  LISTE_MODELES_INSTANCE,
-  trouverTemplateParId,
-  type CategorieModeleInstance,
-  type InstanceTemplate,
-} from "./templates.js";
+  listeGabaritsDockerRapide,
+  trouverGabaritDockerRapideParId,
+  type ChampGabaritDockerRapide,
+  type GabaritDockerRapide,
+} from "./gabarits-docker-rapide.js";
+export { construireCorpsCreationDefautDepuisGabaritDockerRapide } from "./corps-defaut-gabarit-docker-rapide.js";
 export {
   listeGabaritsJeuCatalogue,
   LISTE_GABARITS_JEU_INSTANCE,

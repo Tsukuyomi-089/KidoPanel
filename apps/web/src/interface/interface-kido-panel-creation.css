@@ -283,3 +283,153 @@
   font-size: 0.72rem;
   color: color-mix(in srgb, var(--text) 72%, var(--border));
 }
+
+.kp-fieldset-section {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--workspace-surface) 96%, transparent);
+}
+
+.kp-fieldset-section legend {
+  padding: 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+.kp-details-section {
+  margin-bottom: 0.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 0.35rem 0.85rem;
+  background: color-mix(in srgb, var(--workspace-surface) 94%, transparent);
+}
+
+.kp-details-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-h);
+}
+
+.kp-details-section__corps {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.kp-rangee-expert {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.kp-rangee-expert input[type="number"],
+.kp-rangee-expert input[type="text"] {
+  flex: 1 1 120px;
+  min-width: 110px;
+}
+
+.kp-inline-radio {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.kp-champ--horizontal {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.kp-toggle-mode-creation {
+  display: inline-flex;
+  gap: 0;
+  margin-bottom: 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.kp-toggle-mode-creation button {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  padding: 0.55rem 1rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.kp-toggle-mode-creation button.kp-toggle-mode-creation--actif,
+.kp-toggle-mode-creation--actif {
+  background: color-mix(in srgb, var(--accent) 22%, var(--workspace-surface));
+  color: var(--text-h);
+}
+
+.kp-grille-cartes-gabarits {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.kp-carte-selection-gabarit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--workspace-surface);
+  text-align: left;
+}
+
+.kp-carte-selection-gabarit__icone {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.kp-carte-selection-gabarit__badge {
+  align-self: flex-start;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--text-h);
+}
+
+.kp-encart-contexte-flux {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, var(--workspace-surface));
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.kp-mention-legale-minecraft {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--text) 82%, var(--border));
+}
+
+.kp-presets-memoire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.kp-presets-memoire button {
+  margin: 0;
+}

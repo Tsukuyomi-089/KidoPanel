@@ -44,6 +44,10 @@ export type GestionConteneursPasserelleContexte = {
   rafraichirListe: () => Promise<void>;
   surCreer: () => Promise<void>;
   /**
+   * Envoie un corps `POST /containers` déjà assemblé côté interface (gabarit rapide ou formulaire expert structuré).
+   */
+  surPosterCreationConteneurJson: (corps: Record<string, unknown>) => Promise<boolean>;
+  /**
    * Crée une instance via gabarit passerelle (`templateId` + `configuration`) sans reconstruire le corps depuis le formulaire avancé.
    */
   surCreerDepuisTemplate: (
@@ -186,6 +190,34 @@ export function GestionConteneursPasserelleProvider({
     }
   }, [afficherErreurSiBesoin, etatCreation, rafraichirListe]);
 
+  const surPosterCreationConteneurJson = useCallback(
+    async (corps: Record<string, unknown>): Promise<boolean> => {
+      setMessageErreur(null);
+      try {
+        refUrlContexteErreur.current = composerUrlPasserelle("/containers");
+        const reponse = await appelerPasserelle("/containers", {
+          method: "POST",
+          body: JSON.stringify(corps),
+        });
+        if (!(await afficherErreurSiBesoin(reponse))) {
+          return false;
+        }
+        await rafraichirListe();
+        return true;
+      } catch (e) {
+        setMessageErreur(
+          formaterErreurPourAffichagePanel(
+            e,
+            composerUrlPasserelle("/containers"),
+            "création de conteneur",
+          ),
+        );
+        return false;
+      }
+    },
+    [afficherErreurSiBesoin, rafraichirListe],
+  );
+
   const surCreerDepuisTemplate = useCallback(
     async (templateId: string, configuration: Record<string, unknown>) => {
       setMessageErreur(null);
@@ -261,6 +293,7 @@ export function GestionConteneursPasserelleProvider({
       reverifierPasserelle,
       rafraichirListe,
       surCreer,
+      surPosterCreationConteneurJson,
       surCreerDepuisTemplate,
       actionConteneur,
       jetonSession,
@@ -278,6 +311,7 @@ export function GestionConteneursPasserelleProvider({
     reverifierPasserelle,
     rafraichirListe,
     surCreer,
+    surPosterCreationConteneurJson,
     surCreerDepuisTemplate,
     actionConteneur,
   ]);

@@ -12,6 +12,15 @@ export function PageCoeurDockerKidoPanel() {
 
   return (
     <div className="kidopanel-page-centree kidopanel-page-coeur">
+      <div className="kp-encart-contexte-flux" role="note" style={{ marginBottom: "1rem" }}>
+        <strong>Cœur Docker — mode expert</strong>
+        <p style={{ margin: "0.35rem 0 0" }}>
+          Ce module permet de créer et gérer des containers Docker avec un contrôle total sur leur configuration. Pour
+          déployer un serveur de jeu (Minecraft, Valheim, etc.), utilisez plutôt la section « Serveurs de jeu » du menu
+          principal.
+        </p>
+      </div>
+
       <header className="kidopanel-entete-page-inline">
         <div>
           <p className="kidopanel-sur-titre">Infrastructure</p>

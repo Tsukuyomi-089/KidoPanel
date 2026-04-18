@@ -87,6 +87,12 @@ export function RailNavigationKidoPanel({
             <IcoHebergement className="kp-sidebar__lien-icone" />
             Hébergement web
           </NavLink>
+        </nav>
+      </div>
+
+      <div className="kp-sidebar__section">
+        <div className="kp-sidebar__section-label">Avancé</div>
+        <nav className="kp-sidebar__liste" aria-label="Infrastructure Docker">
           <NavLink to="/coeur-docker" className={classeLienRail}>
             <IcoDocker className="kp-sidebar__lien-icone" />
             Cœur Docker
@@ -104,7 +110,7 @@ export function RailNavigationKidoPanel({
             </NavLink>
             <NavLink to="/admin/journal-audit" className={classeLienRail}>
               <IcoAudit className="kp-sidebar__lien-icone" />
-              Journal d’audit
+              Journal d'audit
             </NavLink>
           </nav>
         </div>

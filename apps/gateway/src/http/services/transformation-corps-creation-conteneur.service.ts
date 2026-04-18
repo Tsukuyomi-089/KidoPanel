@@ -1,10 +1,13 @@
-import { trouverTemplateParId } from "@kidopanel/container-catalog";
+import {
+  construireCorpsCreationDefautDepuisGabaritDockerRapide,
+  trouverGabaritDockerRapideParId,
+} from "@kidopanel/container-catalog";
 import { fusionProfondeEnregistrementsJson } from "../util/fusion-profonde-enregistrements-json.js";
 import { ErreurCorpsCreationInstance } from "./erreur-corps-creation-instance.js";
 
 /**
  * Transforme un corps JSON client éventuellement basé sur `templateId` vers la charge attendue par le moteur
- * (`imageCatalogId` issu du gabarit, fusion profonde avec `configuration` et champs hors gabarit).
+ * (`imageCatalogId` issu du gabarit rapide, fusion profonde avec `configuration` et champs hors gabarit).
  */
 export function transformerCorpsCreationConteneurPourMoteur(brut: unknown): unknown {
   if (!brut || typeof brut !== "object" || Array.isArray(brut)) {
@@ -15,11 +18,11 @@ export function transformerCorpsCreationConteneurPourMoteur(brut: unknown): unkn
   if (typeof templateIdBrut !== "string" || templateIdBrut.trim().length === 0) {
     return brut;
   }
-  const gabarit = trouverTemplateParId(templateIdBrut.trim());
+  const gabarit = trouverGabaritDockerRapideParId(templateIdBrut.trim());
   if (gabarit === undefined) {
     throw new ErreurCorpsCreationInstance(
       "TEMPLATE_INSTANCE_INCONNU",
-      "Le modèle d’instance indiqué est inconnu ou n’est plus disponible.",
+      "Le modèle d'instance indiqué est inconnu ou n'est plus disponible.",
     );
   }
   const surchargeConfiguration =
@@ -30,7 +33,7 @@ export function transformerCorpsCreationConteneurPourMoteur(brut: unknown): unkn
       ? (entree.configuration as Record<string, unknown>)
       : {};
 
-  const baseDefaut = { ...(gabarit.defaultConfig as Record<string, unknown>) };
+  const baseDefaut = construireCorpsCreationDefautDepuisGabaritDockerRapide(gabarit);
   const corpsModeleEtConfig = fusionProfondeEnregistrementsJson(
     baseDefaut,
     surchargeConfiguration,

@@ -35,6 +35,14 @@ export function PageListeServeurs() {
 
   return (
     <>
+      <div className="kp-encart-contexte-flux kp-marges-haut-sm" role="note">
+        <strong>Vos serveurs de jeu</strong>
+        <p style={{ margin: "0.35rem 0 0" }}>
+          Créez un serveur en quelques clics. Le panel configure automatiquement les ports et les options de lancement ;
+          vous ne manipulez pas la configuration Docker à la main.
+        </p>
+      </div>
+
       <div className="kp-page-entete">
         <div>
           <h1 className="kp-page-titre">Serveurs de jeu</h1>

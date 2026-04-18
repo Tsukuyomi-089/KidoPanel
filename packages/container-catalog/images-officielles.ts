@@ -9,6 +9,7 @@ export const IDENTIFIANTS_IMAGES_CATALOGUE = [
   "redis",
   "node",
   "postgres",
+  "mysql",
   "jeu-minecraft-java",
   "jeu-minecraft-bedrock",
   "jeu-valheim",
@@ -16,6 +17,7 @@ export const IDENTIFIANTS_IMAGES_CATALOGUE = [
   "jeu-satisfactory",
   "jeu-cs2",
   "jeu-ark",
+  "jeu-personnalise",
 ] as const;
 
 /** Union des identifiants présents dans {@link IDENTIFIANTS_IMAGES_CATALOGUE}. */
@@ -67,6 +69,12 @@ export const IMAGES_OFFICIELLES: readonly EntreeImageOfficielleCatalogue[] = [
     categorie: "db",
   },
   {
+    id: "mysql",
+    referenceDocker: "mysql:8",
+    description: "Serveur de bases de données relationnelles MySQL en version stable 8.",
+    categorie: "db",
+  },
+  {
     id: "jeu-minecraft-java",
     referenceDocker: "itzg/minecraft-server:latest",
     description:
@@ -108,6 +116,13 @@ export const IMAGES_OFFICIELLES: readonly EntreeImageOfficielleCatalogue[] = [
     referenceDocker: "turzam/ark-server:latest",
     description:
       "Serveur ARK Survival Evolved ; image communautaire à confirmer sur l’environnement de production avant tirage.",
+    categorie: "jeu",
+  },
+  {
+    id: "jeu-personnalise",
+    referenceDocker: "nginx:alpine",
+    description:
+      "Image technique pour le type de jeu personnalisé ; remplacer par l'image métier cible en production.",
     categorie: "jeu",
   },
 ];

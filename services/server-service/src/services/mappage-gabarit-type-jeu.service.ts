@@ -40,4 +40,5 @@ const MAPPING_TYPE_JEU_VERS_IDENTIFIANT_GABARIT: Partial<
   SATISFACTORY: "tmpl-jeu-satisfactory",
   CSGO: "tmpl-jeu-cs2",
   ARK: "tmpl-jeu-ark",
+  CUSTOM: "tmpl-jeu-personnalise",
 };
