@@ -14,10 +14,13 @@ export type GatewayEnv = {
   /** Chaîne de connexion Prisma vers PostgreSQL (utilisateurs et propriétés de conteneurs). */
   databaseUrl: string;
   /**
-   * URL de base du service instances jeu (optionnel) : si absente, le relais `/serveurs-jeux` n’est pas exposé.
+   * URL de base du service instances jeu : par défaut `http://127.0.0.1:8790` (aligné sur SERVER_SERVICE_PORT).
+   * Définir `SERVER_SERVICE_DISABLED=1` pour désactiver explicitement le relais `/serveurs-jeux`.
    */
   serverServiceBaseUrl: string | undefined;
 };
+
+const URL_SERVEUR_JEUX_LOCAL_PAR_DEFAUT = "http://127.0.0.1:8790";
 
 /** Retourne l’URL de base du container-engine, sans barre oblique finale. */
 export function getContainerEngineBaseUrl(): string {
@@ -54,6 +57,22 @@ export function loadGatewayEnv(): GatewayEnv {
   const exp = Number(process.env.GATEWAY_JWT_EXPIRES_SECONDS ?? "86400");
   const bcryptCost = Number(process.env.GATEWAY_BCRYPT_COST ?? "12");
   const serveurJeuxBrut = process.env.SERVER_SERVICE_BASE_URL?.trim();
+  const serviceJeuxExplicitementDesactive =
+    process.env.SERVER_SERVICE_DISABLED?.trim() === "1" ||
+    process.env.SERVER_SERVICE_DISABLED?.trim()?.toLowerCase() === "true";
+
+  let serverServiceBaseUrl: string | undefined;
+  if (serviceJeuxExplicitementDesactive) {
+    serverServiceBaseUrl = undefined;
+  } else if (
+    typeof serveurJeuxBrut === "string" &&
+    serveurJeuxBrut.length > 0
+  ) {
+    serverServiceBaseUrl = serveurJeuxBrut.replace(/\/+$/, "");
+  } else {
+    serverServiceBaseUrl = URL_SERVEUR_JEUX_LOCAL_PAR_DEFAUT;
+  }
+
   return {
     rateLimitMax: Number.isFinite(max) && max > 0 ? max : 120,
     rateLimitWindowMs:
@@ -65,8 +84,6 @@ export function loadGatewayEnv(): GatewayEnv {
         ? bcryptCost
         : 12,
     databaseUrl,
-    serverServiceBaseUrl: serveurJeuxBrut
-      ? serveurJeuxBrut.replace(/\/+$/, "")
-      : undefined,
+    serverServiceBaseUrl,
   };
 }

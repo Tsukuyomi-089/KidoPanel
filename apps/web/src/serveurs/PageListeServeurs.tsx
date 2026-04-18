@@ -55,8 +55,8 @@ export function PageListeServeurs() {
         </Link>
       </div>
       <p className="kp-texte-muted">
-        Prérequis : variable <code className="kp-cellule-mono">SERVER_SERVICE_BASE_URL</code> sur la passerelle
-        pointant vers le service instances jeu.
+        Le service instances jeu doit tourner sur la machine (par défaut port 8790) ; sinon définissez{" "}
+        <code className="kp-cellule-mono">SERVER_SERVICE_BASE_URL</code> sur la passerelle.
       </p>
       {erreur !== null ? (
         <pre className="kp-cellule-mono kp-marges-haut-sm" role="alert">
