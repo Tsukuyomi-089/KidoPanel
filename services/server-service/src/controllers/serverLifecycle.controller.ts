@@ -87,6 +87,7 @@ export function monterRoutesCycleInstanceServeurJeux(
           diskGb: corps.diskGb,
           variablesEnvBrutes: corps.env ?? {},
           identifiantRequeteHttp: c.get("requestId"),
+          reseauInterneUtilisateurId: corps.reseauInterneUtilisateurId,
         });
         return c.json(cree, 201);
       } catch (erreur) {

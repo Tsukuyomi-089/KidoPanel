@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit",
     "dev": "tsc && (tsc --watch --preserveWatchOutput & node --watch dist/main.js)",
     "lint": "node -e \"\"",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "test": "vitest run"
   },
   "dependencies": {
     "@kidopanel/container-catalog": "workspace:*",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@types/dockerode": "^4.0.1",
     "@types/node": "^24.12.2",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "vitest": "^3.2.4"
   }
 }

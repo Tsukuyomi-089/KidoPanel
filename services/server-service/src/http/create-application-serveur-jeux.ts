@@ -3,6 +3,7 @@ import { prisma } from "@kidopanel/database";
 import { monterRoutesCycleInstanceServeurJeux } from "../controllers/serverLifecycle.controller.js";
 import { DepotInstanceServeur } from "../repositories/depot-instance-serveur.repository.js";
 import { DepotProprieteConteneurInstance } from "../repositories/depot-propriete-conteneur-instance.repository.js";
+import { DepotReseauInterneUtilisateur } from "../repositories/depot-reseau-interne-utilisateur.repository.js";
 import { ClientMoteurConteneursHttp } from "../services/client-moteur-conteneurs-http.service.js";
 import { CycleVieInstanceServeur } from "../services/cycle-vie-instance-serveur.service.js";
 import { obtenirUrlBaseMoteurConteneurs } from "../config/environnement-serveur-instance.js";
@@ -22,6 +23,7 @@ export function creerApplicationServeurJeux(): Hono<{
 
   const depot = new DepotInstanceServeur(prisma);
   const depotPropriete = new DepotProprieteConteneurInstance(prisma);
+  const depotReseauInterne = new DepotReseauInterneUtilisateur(prisma);
   const clientMoteur = new ClientMoteurConteneursHttp(
     obtenirUrlBaseMoteurConteneurs(),
   );
@@ -29,6 +31,7 @@ export function creerApplicationServeurJeux(): Hono<{
     depot,
     depotPropriete,
     clientMoteur,
+    depotReseauInterne,
   );
 
   const app = new Hono<{ Variables: VariablesServeurJeux }>();

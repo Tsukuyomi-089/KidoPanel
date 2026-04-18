@@ -24,6 +24,10 @@ import { creerServiceTirageImageMoteur } from "./image-puller.service.js";
 import type { ServiceTirageImageMoteur } from "./image-puller.service.js";
 import { resoudreImagePourCreation } from "./image-validator.service.js";
 import { executerCreationConteneurDocker } from "./docker/executer-creation-conteneur-docker.js";
+import {
+  creerReseauPontUtilisateurDocker,
+  supprimerReseauPontParNomDocker,
+} from "./docker/reseau-utilisateur-docker.service.js";
 import { journaliserMoteur } from "./observabilite/journal-json.js";
 import {
   creerServiceJournauxFichierConteneur,
@@ -111,6 +115,24 @@ export class ContainerEngine {
       spec,
       options,
     );
+  }
+
+  /**
+   * Crée un pont bridge Docker avec une plage IPv4 dédiée (nom imposé par la passerelle).
+   */
+  async creerReseauPontUtilisateur(
+    params: Parameters<typeof creerReseauPontUtilisateurDocker>[1],
+    options?: { requestId?: string },
+  ): Promise<Awaited<ReturnType<typeof creerReseauPontUtilisateurDocker>>> {
+    return creerReseauPontUtilisateurDocker(this.docker, params, options);
+  }
+
+  /** Supprime un pont créé via {@link creerReseauPontUtilisateur} lorsque la base confirme qu’aucune instance ne l’emploie. */
+  async supprimerReseauPontUtilisateurParNom(
+    nomDocker: string,
+    options?: { requestId?: string },
+  ): Promise<void> {
+    return supprimerReseauPontParNomDocker(this.docker, nomDocker, options);
   }
 
   async startContainer(id: string): Promise<void> {

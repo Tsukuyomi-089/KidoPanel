@@ -7,6 +7,7 @@ import {
   normaliserExposedPortsPourValidationZod,
   normaliserLogConfigHostPourValidationZod,
 } from "./normalisation-corps-api-docker-zod.js";
+import { MOTIF_NOM_RESEAU_BRIDGE_UTILISATEUR_KIDOPANEL } from "../../docker/reseau-interne-kidopanel.constantes.js";
 
 /** Schéma d’une liaison hôte pour un port conteneur (ex. `80/tcp`). */
 const liaisonPortConteneurSchema = z.object({
@@ -174,6 +175,12 @@ export const createContainerJsonSchema = z
   volumes: z.record(z.string().min(1).max(4096), z.object({})).optional(),
   onBuild: z.array(z.string().min(1).max(8192)).max(128).optional(),
     shell: z.array(z.string().min(1).max(256)).max(16).optional(),
+  reseauBridgeNom: z
+    .string()
+    .min(3)
+    .max(128)
+    .regex(MOTIF_NOM_RESEAU_BRIDGE_UTILISATEUR_KIDOPANEL)
+    .optional(),
   })
   .superRefine((donnees, ctx) => {
     const analyseReference =

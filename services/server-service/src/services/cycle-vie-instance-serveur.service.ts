@@ -3,6 +3,7 @@ import type { GameType } from "@kidopanel/database";
 import { Prisma } from "@kidopanel/database";
 import type { DepotInstanceServeur } from "../repositories/depot-instance-serveur.repository.js";
 import type { DepotProprieteConteneurInstance } from "../repositories/depot-propriete-conteneur-instance.repository.js";
+import type { DepotReseauInterneUtilisateur } from "../repositories/depot-reseau-interne-utilisateur.repository.js";
 import type { ClientMoteurConteneursHttp } from "./client-moteur-conteneurs-http.service.js";
 import { resoudreGabaritJeuPourType } from "./mappage-gabarit-type-jeu.service.js";
 import { validerEtFusionnerVariablesEnvJeux } from "./installateur-variables-env-jeu.service.js";
@@ -30,6 +31,7 @@ export class CycleVieInstanceServeur {
     private readonly depot: DepotInstanceServeur,
     private readonly depotPropriete: DepotProprieteConteneurInstance,
     private readonly clientMoteur: ClientMoteurConteneursHttp,
+    private readonly depotReseauInterne: DepotReseauInterneUtilisateur,
   ) {}
 
   async listerPourIdentiteInterne(params: {
@@ -77,6 +79,7 @@ export class CycleVieInstanceServeur {
     diskGb: number;
     variablesEnvBrutes: Record<string, string>;
     identifiantRequeteHttp: string;
+    reseauInterneUtilisateurId?: string;
   }) {
     if (params.role === "VIEWER") {
       throw new ErreurMetierInstanceJeux(
@@ -91,6 +94,22 @@ export class CycleVieInstanceServeur {
       variablesUtilisateur: params.variablesEnvBrutes,
       memoireMbInstance: params.memoryMb,
     });
+    let nomPontDocker: string | undefined;
+    const idReseauBrut = params.reseauInterneUtilisateurId?.trim();
+    if (idReseauBrut !== undefined && idReseauBrut.length > 0) {
+      const enregistrementReseau = await this.depotReseauInterne.trouverPourUtilisateur(
+        idReseauBrut,
+        params.utilisateurIdProprietaire,
+      );
+      if (enregistrementReseau === null) {
+        throw new ErreurMetierInstanceJeux(
+          "RESEAU_INTERNE_UTILISATEUR_INTROUVABLE",
+          "Le réseau interne choisi est introuvable ou n’appartient pas à ce compte.",
+          422,
+        );
+      }
+      nomPontDocker = enregistrementReseau.nomDocker;
+    }
     const idInstance = randomUUID();
     const ligne = await this.depot.creer({
       id: idInstance,
@@ -103,6 +122,9 @@ export class CycleVieInstanceServeur {
       env: fusionEnv as unknown as Prisma.InputJsonValue,
       status: "INSTALLING",
       installLogs: null,
+      ...(idReseauBrut !== undefined && idReseauBrut.length > 0
+        ? { reseauInterneUtilisateurId: idReseauBrut }
+        : {}),
     });
 
     return finaliserInstallationConteneurDockerInstanceJeux({
@@ -113,6 +135,7 @@ export class CycleVieInstanceServeur {
       gabarit,
       fusionEnv,
       identifiantRequeteHttp: params.identifiantRequeteHttp,
+      ...(nomPontDocker !== undefined ? { reseauBridgeNom: nomPontDocker } : {}),
     });
   }
 

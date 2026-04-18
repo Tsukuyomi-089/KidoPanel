@@ -23,6 +23,8 @@ export class ClientMoteurConteneursHttp {
     memoireMb: number;
     coeursCpu: number;
     variablesEnv: Record<string, string>;
+    /** Nom Docker du pont utilisateur (`kidopanel-unet-…`) lorsque l’instance n’utilise pas uniquement `kidopanel-network`. */
+    reseauBridgeNom?: string;
   }): CorpsCreationConteneurMoteur {
     const liaisonsPorts: Record<string, Array<{ hostIp: string; hostPort: string }>> =
       {};
@@ -32,7 +34,7 @@ export class ClientMoteurConteneursHttp {
       portsExposes.push(cle);
       liaisonsPorts[cle] = [{ hostIp: "", hostPort: "0" }];
     }
-    return {
+    const corps: CorpsCreationConteneurMoteur = {
       name: params.nomConteneur,
       imageCatalogId: params.gabarit.imageCatalogId,
       exposedPorts: portsExposes,
@@ -44,6 +46,11 @@ export class ClientMoteurConteneursHttp {
         restartPolicy: { name: "unless-stopped" },
       },
     };
+    const pont = params.reseauBridgeNom?.trim();
+    if (pont !== undefined && pont.length > 0) {
+      corps.reseauBridgeNom = pont;
+    }
+    return corps;
   }
 
   async posterCreation(

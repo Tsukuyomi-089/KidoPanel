@@ -8,6 +8,7 @@ import {
 import { tryRespondWithEngineError } from "./respond-route-error.js";
 import { mountContainerRoutes } from "./routes/containers.routes.js";
 import { mountImagesRoutes } from "./routes/images.routes.js";
+import { mountReseauxInternesRoutes } from "./routes/reseaux-internes.routes.js";
 import type { VariablesMoteurHttp } from "./variables-moteur-http.js";
 
 /** Construit l’application HTTP Hono branchée sur une instance de `ContainerEngine`. */
@@ -50,6 +51,7 @@ export function createEngineHttpApp(engine: ContainerEngine): Hono<{
 
   mountContainerRoutes(app, engine);
   mountImagesRoutes(app);
+  mountReseauxInternesRoutes(app, engine);
 
   app.notFound((c) =>
     c.json(

@@ -2,12 +2,14 @@ import { Hono } from "hono";
 import { prisma } from "@kidopanel/database";
 import { ServiceAuth } from "../auth/auth.service.js";
 import { ContainerOwnershipRepository } from "../auth/container-ownership-repository.prisma.js";
+import { ReseauInterneUtilisateurRepository } from "../auth/reseau-interne-utilisateur-repository.prisma.js";
 import { UserRepository } from "../auth/user-repository.prisma.js";
 import {
   encoderSecretJwt,
   loadGatewayEnv,
 } from "../config/gateway-env.js";
 import { monterRoutesServeursJeuSiConfigure } from "./routes/serveurs-jeu-proxy.routes.js";
+import { monterRoutesReseauxInternesPasserelle } from "./routes/reseaux-internes-passerelle.routes.js";
 import { monterRoutesAuth } from "./routes/auth.routes.js";
 import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js";
 import { monterRouteCatalogueImagesPasserelle } from "./routes/images-catalogue-passerelle.routes.js";
@@ -29,6 +31,7 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   const secretJwt = encoderSecretJwt(env);
   const userRepository = new UserRepository(prisma);
   const depotPropriete = new ContainerOwnershipRepository(prisma);
+  const depotReseauxInternes = new ReseauInterneUtilisateurRepository(prisma);
   const serviceAuth = new ServiceAuth({
     userRepository,
     secretJwt,
@@ -50,6 +53,7 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   monterRoutesAuth(app, serviceAuth);
   monterRoutesPanelIndicateurs(app, secretJwt, depotPropriete);
   monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
+  monterRoutesReseauxInternesPasserelle(app, secretJwt, depotReseauxInternes);
   monterRouteCatalogueImagesPasserelle(app, secretJwt);
   monterRouteTemplatesCataloguePasserelle(app, secretJwt);
   monterRoutesServeursJeuSiConfigure(

@@ -6,7 +6,8 @@ export type CodeErreurMetierInstanceJeux =
   | "ENVIRONNEMENT_INSTANCE_INCOMPLET"
   | "IDENTITE_INTERNE_MANQUANTE"
   | "ROLE_LECTURE_SEULE_MUTATION_INTERDITE"
-  | "MOTEUR_CONTENEURS_ERREUR";
+  | "MOTEUR_CONTENEURS_ERREUR"
+  | "RESEAU_INTERNE_UTILISATEUR_INTROUVABLE";
 
 /** Exception métier avec statut HTTP associé pour réponses JSON cohérentes. */
 export class ErreurMetierInstanceJeux extends Error {

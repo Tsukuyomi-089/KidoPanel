@@ -20,4 +20,6 @@ export const corpsCreationInstanceServeurJeuxSchema = z.object({
   cpuCores: z.number().positive().max(512),
   diskGb: z.number().int().positive().max(10_000),
   env: z.record(z.string(), z.string()).optional(),
+  /** Identifiant d’un pont créé via la passerelle (`GET /reseaux-internes`) pour isoler le conteneur sur ce réseau. */
+  reseauInterneUtilisateurId: z.string().uuid().optional(),
 });

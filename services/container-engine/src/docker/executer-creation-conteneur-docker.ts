@@ -7,6 +7,7 @@ import { resoudreImagePourCreation } from "../image-validator.service.js";
 import { wrapDockerError } from "./wrap-docker-operation.js";
 import { traduireOptionsCreationConteneur } from "./traduction-options-creation-conteneur.js";
 import { garantirReseauKidopanelNetworkParDefaut } from "./network.service.js";
+import { verifierPontReseauNomExisteSurHote } from "./reseau-utilisateur-docker.service.js";
 import { appliquerAttachementReseauInterneKidopanelSurSpec } from "./appliquer-spec-reseau-interne.js";
 import { extraireIpv4ConteneurSurReseauNomme } from "./extraction-ip-reseau-inspection.js";
 import { NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL } from "./reseau-interne-kidopanel.constantes.js";
@@ -58,7 +59,12 @@ export async function executerCreationConteneurDocker(
     metaTirage,
     requestId,
   );
-  await garantirReseauKidopanelNetworkParDefaut(deps.docker, { requestId });
+  const pontOptionnel = spec.reseauBridgeNom?.trim();
+  if (pontOptionnel !== undefined && pontOptionnel.length > 0) {
+    await verifierPontReseauNomExisteSurHote(deps.docker, pontOptionnel);
+  } else {
+    await garantirReseauKidopanelNetworkParDefaut(deps.docker, { requestId });
+  }
   const specAvecReseau = appliquerAttachementReseauInterneKidopanelSurSpec(spec);
   const opts = traduireOptionsCreationConteneur(specAvecReseau, resolu.referenceDocker);
   try {
@@ -66,9 +72,12 @@ export async function executerCreationConteneurDocker(
     let ipReseauInterne: string | undefined;
     try {
       const inspection = await container.inspect();
+      const nomReseauPourIp =
+        specAvecReseau.hostConfig?.networkMode?.trim() ??
+        NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL;
       ipReseauInterne = extraireIpv4ConteneurSurReseauNomme(
         inspection,
-        NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL,
+        nomReseauPourIp,
       );
       if (ipReseauInterne !== undefined) {
         journaliserMoteur({
@@ -77,7 +86,7 @@ export async function executerCreationConteneurDocker(
           requestId,
           metadata: {
             idConteneur: container.id,
-            nomReseau: NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL,
+            nomReseau: nomReseauPourIp,
             ipReseauInterne,
           },
         });

@@ -196,6 +196,11 @@ export interface ContainerCreateSpec {
   stopTimeout?: number;
   /** Désactiver la pile réseau du conteneur (`NetworkDisabled`). */
   networkDisabled?: boolean;
+  /**
+   * Réseau bridge Docker existant sur l’hôte (créé depuis le panel). Sans cette valeur,
+   * le réseau partagé `kidopanel-network` est appliqué hors modes réseau spéciaux.
+   */
+  reseauBridgeNom?: string;
   /** Points de montage déclaratifs hérités (`Volumes` dans la config de création). */
   volumes?: Record<string, object>;
   /** Instructions `ONBUILD` pour une image en construction (`OnBuild`). */

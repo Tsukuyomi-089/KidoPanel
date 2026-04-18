@@ -16,6 +16,8 @@ export async function finaliserInstallationConteneurDockerInstanceJeux(params: {
   gabarit: GabaritJeuCatalogueInstance;
   fusionEnv: Record<string, string>;
   identifiantRequeteHttp: string;
+  /** Nom Docker du pont utilisateur (`kidopanel-unet-…`) lorsque la création cible un réseau dédié. */
+  reseauBridgeNom?: string;
 }): Promise<GameServerInstance> {
   const { depot, depotPropriete, clientMoteur, ligne, gabarit, fusionEnv } =
     params;
@@ -26,6 +28,9 @@ export async function finaliserInstallationConteneurDockerInstanceJeux(params: {
     memoireMb: ligne.memoryMb,
     coeursCpu: ligne.cpuCores,
     variablesEnv: fusionEnv,
+    ...(params.reseauBridgeNom !== undefined && params.reseauBridgeNom.trim().length > 0
+      ? { reseauBridgeNom: params.reseauBridgeNom.trim() }
+      : {}),
   });
 
   let reponseCreation: Response;

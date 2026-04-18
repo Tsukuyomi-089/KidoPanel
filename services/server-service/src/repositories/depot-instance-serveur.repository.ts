@@ -12,6 +12,7 @@ type DonneesNouvelleInstance = {
   env: Prisma.InputJsonValue;
   status: InstanceStatus;
   installLogs: string | null;
+  reseauInterneUtilisateurId?: string | null;
 };
 
 /**

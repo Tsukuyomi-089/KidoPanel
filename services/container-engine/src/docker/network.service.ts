@@ -3,7 +3,7 @@ import { journaliserMoteur } from "../observabilite/journal-json.js";
 import { NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL } from "./reseau-interne-kidopanel.constantes.js";
 
 /** Filtre Docker Engine pour la recherche de réseaux par nom exact (JSON sérialisé attendu par l’API). */
-function filtreNomReseauDocker(nomReseau: string): string {
+export function filtreNomReseauDocker(nomReseau: string): string {
   return JSON.stringify({ name: [nomReseau] });
 }
 

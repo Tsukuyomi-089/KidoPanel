@@ -32,11 +32,16 @@ export function appliquerAttachementReseauInterneKidopanelSurSpec(
   if (doitPreserverModeReseauUtilisateur(modeActuel)) {
     return spec;
   }
+  const pontPersonnalise = spec.reseauBridgeNom?.trim();
+  const modePont =
+    pontPersonnalise !== undefined && pontPersonnalise.length > 0
+      ? pontPersonnalise
+      : NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL;
   return {
     ...spec,
     hostConfig: {
       ...(spec.hostConfig ?? {}),
-      networkMode: NOM_RESEAU_BRIDGE_INTERNE_KIDOPANEL,
+      networkMode: modePont,
     },
   };
 }

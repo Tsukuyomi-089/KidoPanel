@@ -20,6 +20,27 @@ model User {
   instances         GameServerInstance[]
   webInstances      WebInstance[]
   auditLogs         AuditLog[]
+  reseauxInternes   UserInternalNetwork[]
+}
+
+/**
+ * Réseau bridge Docker dédié à un utilisateur (plage IPv4 choisie dans les limites RFC1918 imposées par le moteur).
+ */
+model UserInternalNetwork {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  nomAffichage   String
+  nomDocker      String   @unique
+  sousReseauCidr String
+  passerelleIpv4 String
+  sansRouteVersInternetExterne Boolean @default(false)
+  creeLe         DateTime @default(now())
+
+  user          User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  instancesJeu  GameServerInstance[]
+  instancesWeb  WebInstance[]
+
+  @@unique([userId, nomAffichage])
 }
 
 model UserQuota {
@@ -50,8 +71,10 @@ model GameServerInstance {
   stoppedAt   DateTime?
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  backups     InstanceBackup[]
+  reseauInterneUtilisateurId String? @db.Uuid
+  user                     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reseauInterneUtilisateur UserInternalNetwork?  @relation(fields: [reseauInterneUtilisateurId], references: [id], onDelete: SetNull)
+  backups                  InstanceBackup[]
 }
 
 model WebInstance {
@@ -66,7 +89,9 @@ model WebInstance {
   diskGb      Int
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reseauInterneUtilisateurId String? @db.Uuid
+  user                     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reseauInterneUtilisateur UserInternalNetwork?  @relation(fields: [reseauInterneUtilisateurId], references: [id], onDelete: SetNull)
 }
 
 model InstanceBackup {
