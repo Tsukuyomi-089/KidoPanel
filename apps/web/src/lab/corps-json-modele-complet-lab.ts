@@ -59,10 +59,12 @@ export function creerHostConfigJsonModeleComplet(): Record<string, unknown> {
 
 /**
  * Modèle de corps `POST /containers` avec toutes les clés connues du lab, pour export ou fusion.
+ * La clé obligatoire `imageCatalogId` utilise un exemple du catalogue officiel (`nginx`) ;
+ * tout autre identifiant valide convient également (postgres, redis, etc.).
  */
 export function creerCorpsJsonModeleComplet(): Record<string, unknown> {
   return {
-    imageCatalogId: "",
+    imageCatalogId: "nginx",
     name: null,
     cmd: null,
     entrypoint: null,

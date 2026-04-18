@@ -1,3 +1,4 @@
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
   styleChampTexteCreation,
@@ -12,7 +13,7 @@ type Props = {
 };
 
 const AIDE_JSON_CORPS_SUPPLEMENTAIRE =
-  "Objet JSON fusionné en premier dans le corps `POST /containers` avant les champs du formulaire (ex. volumes, onBuild, shell, exposedPorts seuls). Laisser vide si inutile. Doit être un objet JSON valide.";
+  "Objet JSON fusionné en premier dans le corps `POST /containers` avant les champs du formulaire (ex. volumes, onBuild, shell). Ne remplace pas `imageCatalogId`, défini par la carte catalogue ou la liste ci-dessus. Doit être un objet JSON valide.";
 
 /** Champs de corps d’API non représentés par des contrôles dédiés (laboratoire). */
 export function BlocJsonCorpsSupplementaireCreationConteneurLab({
@@ -20,8 +21,10 @@ export function BlocJsonCorpsSupplementaireCreationConteneurLab({
   majEtat,
 }: Props) {
   return (
-    <details style={{ marginBottom: 10 }}>
-      <summary>JSON supplémentaire au corps (racine de l’API)</summary>
+    <SegmentRepliableCreationKidoPanel
+      titre="JSON supplémentaire au corps (racine de l’API)"
+      sousTitre="Fusionné avant les autres champs ; ne remplace pas imageCatalogId"
+    >
       <label style={styleLabelChampCreation}>
         <span style={styleTitreChampCreation}>Fragment JSON au niveau racine du corps de création</span>
         <TexteAideChampCreationConteneurLab texte={AIDE_JSON_CORPS_SUPPLEMENTAIRE} />
@@ -33,6 +36,6 @@ export function BlocJsonCorpsSupplementaireCreationConteneurLab({
           style={{ ...styleChampTexteCreation, minHeight: "4rem" }}
         />
       </label>
-    </details>
+    </SegmentRepliableCreationKidoPanel>
   );
 }

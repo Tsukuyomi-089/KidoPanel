@@ -1,3 +1,4 @@
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import * as Aides from "./definitionsAidesCreationConteneurLab.js";
 import {
@@ -20,8 +21,10 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
   majEtat,
 }: Props) {
   return (
-    <details style={{ marginBottom: 10 }}>
-      <summary>Hôte Docker : IPC, PID, runtime, mémoire, cgroup, volumes</summary>
+    <SegmentRepliableCreationKidoPanel
+      titre="Hôte Docker : IPC, PID, runtime, mémoire, cgroup, volumes"
+      sousTitre="DnsSearch, DnsOptions, namespaces, réservation mémoire, volumesFrom, consoleSize"
+    >
       <label style={styleLabelChampCreation}>
         <span style={styleTitreChampCreation}>Suffixes de recherche DNS (DnsSearch)</span>
         <TexteAideChampCreationConteneurLab texte={Aides.AIDE_DNS_SEARCH} />
@@ -215,6 +218,6 @@ export function BlocHoteRuntimeEtMemoireCreationConteneurLab({
           style={styleChampTexteCreation}
         />
       </label>
-    </details>
+    </SegmentRepliableCreationKidoPanel>
   );
 }

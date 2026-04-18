@@ -1,3 +1,4 @@
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
   AIDE_BINDS,
@@ -28,8 +29,11 @@ export function BlocReseauEtEnvironnementCreationConteneurLab({
 }: Props) {
   return (
     <>
-      <details style={{ marginBottom: 10 }}>
-        <summary>Réseau, publication de ports et résolution DNS</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Réseau, publication de ports et résolution DNS"
+        sousTitre="NetworkMode, liaisons de ports, Dns, ExtraHosts, PublishAllPorts"
+        defautOuvert
+      >
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Mode réseau (NetworkMode)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_MODE_RESEAU} />
@@ -79,10 +83,12 @@ export function BlocReseauEtEnvironnementCreationConteneurLab({
             Publier automatiquement tous les ports exposés par l’image
           </label>
         </div>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
 
-      <details style={{ marginBottom: 10 }}>
-        <summary>Environnement, étiquettes et volumes montés depuis l’hôte</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Environnement, étiquettes et volumes montés depuis l’hôte"
+        sousTitre="Env, Labels, Binds"
+      >
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Variables d’environnement (Env)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_VARIABLES_ENVIRONNEMENT} />
@@ -113,7 +119,7 @@ export function BlocReseauEtEnvironnementCreationConteneurLab({
             style={{ ...styleChampTexteCreation, minHeight: "4rem" }}
           />
         </label>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
   AIDE_CAP_ADD,
@@ -34,8 +35,10 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
 }: Props) {
   return (
     <>
-      <details style={{ marginBottom: 10 }}>
-        <summary>Sécurité Linux : privilèges, capacités, options de sécurité</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Sécurité Linux : privilèges, capacités, options"
+        sousTitre="Privileged, ReadonlyRootfs, CapAdd, CapDrop, SecurityOpt"
+      >
         <div style={{ marginBottom: 10 }}>
           <span style={styleTitreChampCreation}>Conteneur privilégié (Privileged)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_PRIVILEGIE} />
@@ -87,10 +90,13 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
             style={styleChampTexteCreation}
           />
         </label>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
 
-      <details style={{ marginBottom: 10 }}>
-        <summary>Limites de ressources et politique de redémarrage</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Limites de ressources et politique de redémarrage"
+        sousTitre="Memory, NanoCpus, RestartPolicy"
+        defautOuvert
+      >
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Limite de mémoire vive (Memory, en Mo saisis)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_MEMOIRE_LIMITE} />
@@ -139,10 +145,12 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
             />
           </label>
         ) : null}
-      </details>
+      </SegmentRepliableCreationKidoPanel>
 
-      <details style={{ marginBottom: 10 }}>
-        <summary>Terminal interactif (TTY) et entrée standard (stdin)</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Terminal interactif (TTY) et entrée standard (stdin)"
+        sousTitre="Tty, OpenStdin"
+      >
         <div style={{ marginBottom: 10 }}>
           <span style={styleTitreChampCreation}>Terminal alloué (Tty)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_TTY} />
@@ -167,10 +175,12 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
             Garder stdin ouvert pour une session interactive
           </label>
         </div>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
 
-      <details style={{ marginBottom: 10 }}>
-        <summary>JSON avancé (healthcheck, réseau nommé, hostConfig additionnel)</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="JSON avancé : healthcheck, réseau nommé, hostConfig additionnel"
+        sousTitre="Contrôles hors formulaire principal — alignés sur l’API Docker"
+      >
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Contrôle de santé (healthcheck)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_JSON_HEALTHCHECK} />
@@ -204,7 +214,7 @@ export function BlocSecuriteRessourcesEtJsonCreationConteneurLab({
             style={{ ...styleChampTexteCreation, minHeight: "6rem" }}
           />
         </label>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
     </>
   );
 }

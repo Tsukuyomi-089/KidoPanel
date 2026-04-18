@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import type { ImageCatalogueApi } from "@kidopanel/container-catalog";
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
+import {
+  GrilleCatalogueImagesCreationConteneurLab,
+  libelleCategorieImageCatalogueLab,
+} from "./GrilleCatalogueImagesCreationConteneurLab.js";
 import {
   AIDE_ADRESSE_MAC,
   AIDE_CMD,
@@ -27,22 +32,6 @@ type Props = {
   /** Jeton JWT courant : sans jeton, le catalogue `GET /images` n’est pas chargé. */
   jetonSession: string;
 };
-
-/** Libellé court pour l’affichage de la catégorie métier dans le lab. */
-function libelleCategorie(categorie: ImageCatalogueApi["categorie"]): string {
-  switch (categorie) {
-    case "web":
-      return "Web";
-    case "db":
-      return "Base de données";
-    case "runtime":
-      return "Runtime";
-    case "utilitaire":
-      return "Utilitaire";
-    default:
-      return categorie;
-  }
-}
 
 /** Identité catalogue, nom du conteneur, commande, entrypoint et identité processus. */
 export function BlocIdentiteEtCommandeCreationConteneurLab({
@@ -107,10 +96,30 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
 
   return (
     <>
-      <label style={styleLabelChampCreation}>
-        <span style={styleTitreChampCreation}>Image catalogue (obligatoire)</span>
-        <TexteAideChampCreationConteneurLab texte={AIDE_IMAGE_REFERENCE} />
-        <select
+      <div className="kp-creation-sous-carte">
+        <h2>Image officielle et nom Docker</h2>
+        <div style={styleLabelChampCreation}>
+          <span style={styleTitreChampCreation} id="kp-catalogue-image-titre">
+            Catalogue contrôlé (imageCatalogId)
+          </span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_IMAGE_REFERENCE} />
+          <GrilleCatalogueImagesCreationConteneurLab
+            images={imagesCatalogue}
+            identifiantSelectionne={etat.imageCatalogId}
+            interactionDesactivee={
+              chargementCatalogue ||
+              jetonSession.trim() === "" ||
+              imagesCatalogue.length === 0
+            }
+            surSelection={(id) => {
+              majEtat({ imageCatalogId: id });
+            }}
+          />
+          <p className="kp-creation-catalogue-select-hint">
+            Liste compacte : identifiant unique du corps JSON vers la passerelle (ex. nginx, postgres).
+          </p>
+          <select
+          aria-labelledby="kp-catalogue-image-titre"
           value={
             imagesCatalogue.some((x) => x.id === etat.imageCatalogId)
               ? etat.imageCatalogId
@@ -158,7 +167,8 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
             }}
           >
             <div>
-              <strong>Catégorie :</strong> {libelleCategorie(selection.categorie)}
+              <strong>Catégorie :</strong>{" "}
+              {libelleCategorieImageCatalogueLab(selection.categorie)}
             </div>
             <div style={{ marginTop: 4 }}>
               <strong>Description :</strong> {selection.description}
@@ -169,19 +179,23 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
             </div>
           </div>
         ) : null}
-      </label>
-      <label style={styleLabelChampCreation}>
-        <span style={styleTitreChampCreation}>Nom du conteneur sur l’hôte</span>
-        <TexteAideChampCreationConteneurLab texte={AIDE_NOM_CONTENEUR} />
-        <input
-          value={etat.nom}
-          onChange={(e) => majEtat({ nom: e.target.value })}
-          style={styleChampTexteCreation}
-        />
-      </label>
+        </div>
+        <label style={styleLabelChampCreation}>
+          <span style={styleTitreChampCreation}>Nom du conteneur sur l’hôte</span>
+          <TexteAideChampCreationConteneurLab texte={AIDE_NOM_CONTENEUR} />
+          <input
+            value={etat.nom}
+            onChange={(e) => majEtat({ nom: e.target.value })}
+            style={styleChampTexteCreation}
+          />
+        </label>
+      </div>
 
-      <details style={{ marginBottom: 10 }}>
-        <summary>Commande, point d’entrée et identité du processus</summary>
+      <SegmentRepliableCreationKidoPanel
+        titre="Commande, point d’entrée et identité du processus"
+        sousTitre="Cmd, Entrypoint, WorkingDir, User, Hostname, Domainname, MAC, StopSignal"
+        variante="accent"
+      >
         <label style={styleLabelChampCreation}>
           <span style={styleTitreChampCreation}>Arguments de commande (Cmd)</span>
           <TexteAideChampCreationConteneurLab texte={AIDE_CMD} />
@@ -256,7 +270,7 @@ export function BlocIdentiteEtCommandeCreationConteneurLab({
             style={styleChampTexteCreation}
           />
         </label>
-      </details>
+      </SegmentRepliableCreationKidoPanel>
     </>
   );
 }

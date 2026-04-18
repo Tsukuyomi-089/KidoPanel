@@ -88,3 +88,197 @@
 .kp-creation-actions .bouton-principal-kido {
   min-width: 12rem;
 }
+
+/* Fil vertical de l’assistant : espacement homogène entre les segments */
+.kp-creation-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Encadré d’avertissement toujours visible (remplace un details repliable peu lisible) */
+.kp-creation-conseil {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--workspace-surface) 82%, var(--accent)) 0%,
+    var(--workspace-surface) 100%
+  );
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.kp-creation-conseil__titre {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-h);
+}
+
+.kp-creation-conseil__role {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+/* Segment repliable personnalisé */
+.kp-creation-segment {
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--code-bg) 18%, var(--workspace-surface));
+  overflow: hidden;
+}
+
+.kp-creation-segment--accent {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--workspace-surface) 90%, var(--accent)) 0%,
+    color-mix(in srgb, var(--code-bg) 14%, var(--workspace-surface)) 100%
+  );
+}
+
+.kp-creation-segment__entete {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.72rem 0.9rem;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+.kp-creation-segment__entete:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.kp-creation-segment__chevron {
+  flex-shrink: 0;
+  margin-top: 0.35rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid color-mix(in srgb, var(--text) 45%, var(--border));
+  border-bottom: 2px solid color-mix(in srgb, var(--text) 45%, var(--border));
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+}
+
+.kp-creation-segment__entete[aria-expanded="true"] .kp-creation-segment__chevron {
+  transform: rotate(45deg);
+  margin-top: 0.25rem;
+}
+
+.kp-creation-segment__titres {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.kp-creation-segment__titre {
+  font-size: 0.93rem;
+  font-weight: 650;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+}
+
+.kp-creation-segment__sous {
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--text) 78%, var(--border));
+}
+
+.kp-creation-segment__corps {
+  padding: 0 0.9rem 0.95rem;
+  border-top: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+}
+
+.kp-creation-segment__corps[hidden] {
+  display: none;
+}
+
+/* Grille du catalogue d’images */
+.kp-creation-catalogue-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  gap: 0.55rem;
+  margin-top: 0.65rem;
+}
+
+.kp-creation-catalogue-fiche {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  padding: 0.65rem 0.72rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--workspace-surface) 94%, var(--code-bg));
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+
+.kp-creation-catalogue-fiche:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--accent) 14%, transparent);
+  transform: translateY(-1px);
+}
+
+.kp-creation-catalogue-fiche:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  outline-offset: 2px;
+}
+
+.kp-creation-catalogue-fiche:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.kp-creation-catalogue-fiche--actif {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 2px 14px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.kp-creation-catalogue-fiche__id {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text-h);
+}
+
+.kp-creation-catalogue-fiche__cat {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--accent) 75%, var(--text));
+}
+
+.kp-creation-catalogue-fiche__ref {
+  font-size: 0.68rem;
+  opacity: 0.88;
+  word-break: break-all;
+}
+
+.kp-creation-catalogue-select-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--text) 72%, var(--border));
+}

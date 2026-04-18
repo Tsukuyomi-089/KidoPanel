@@ -119,7 +119,7 @@ function retirerNullProfond(valeur: unknown): unknown {
 
 /**
  * Projette un corps `POST /containers` (objet JSON) sur l’état du formulaire laboratoire.
- * Lève une erreur si la structure minimale (objet avec `image` non vide) est absente.
+ * Lève une erreur si la structure minimale (objet avec `imageCatalogId` catalogue valide ou reprise depuis l’ancienne clé `image`) est absente.
  */
 export function etatDepuisCorpsCreationConteneurLab(
   brut: unknown,

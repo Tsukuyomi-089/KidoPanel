@@ -45,18 +45,16 @@ export function SectionCreationConteneurAvanceLab({
       style={modePanel ? undefined : styleBlocLab}
     >
       <h2 style={modePanel ? undefined : { fontSize: "1rem", marginTop: 0 }}>
-        Créer un conteneur (aide par champ)
+        {modePanel ? "Atelier de création" : "Créer un conteneur (aide par champ)"}
       </h2>
-      <details
-        className={modePanel ? "kp-creation-avertissement" : undefined}
-        open
-        style={modePanel ? undefined : { marginBottom: 12 }}
-      >
-        <summary style={modePanel ? undefined : { cursor: "pointer", fontWeight: 600 }}>
-          Lire avant de remplir : création, démarrage, conteneur qui s’arrête tout de suite
-        </summary>
-        <TexteAideChampCreationConteneurLab texte={AIDE_CREATION_CONTENEUR_ENTETE} />
-      </details>
+      <aside className="kp-creation-conseil">
+        <h3 className="kp-creation-conseil__titre">
+          Création, démarrage et conteneurs qui s’arrêtent aussitôt
+        </h3>
+        <div className="kp-creation-conseil__role">
+          <TexteAideChampCreationConteneurLab texte={AIDE_CREATION_CONTENEUR_ENTETE} />
+        </div>
+      </aside>
       {masquerParagrapheDocumentationApi ? null : (
         <p style={{ fontSize: "0.88rem", opacity: 0.88, marginTop: 0 }}>
           Chaque champ ci-dessous comporte un titre lisible et un court texte d’explication. Les noms entre
@@ -66,23 +64,25 @@ export function SectionCreationConteneurAvanceLab({
         </p>
       )}
 
-      <PanneauConfigurationsSauvegardeesCreationConteneurLab
-        etatFormulaire={etat}
-        surRemplirFormulaire={surRemplirFormulaire}
-        surErreur={surErreurConfiguration}
-        presentationPanel={modePanel}
-      />
-      <BlocJsonCorpsSupplementaireCreationConteneurLab etat={etat} majEtat={majEtat} />
+      <div className="kp-creation-flow">
+        <PanneauConfigurationsSauvegardeesCreationConteneurLab
+          etatFormulaire={etat}
+          surRemplirFormulaire={surRemplirFormulaire}
+          surErreur={surErreurConfiguration}
+          presentationPanel={modePanel}
+        />
+        <BlocJsonCorpsSupplementaireCreationConteneurLab etat={etat} majEtat={majEtat} />
 
-      <BlocIdentiteEtCommandeCreationConteneurLab
-        etat={etat}
-        majEtat={majEtat}
-        jetonSession={jetonSession}
-      />
-      <BlocOptionsMoteurDockerCreationConteneurLab etat={etat} majEtat={majEtat} />
-      <BlocReseauEtEnvironnementCreationConteneurLab etat={etat} majEtat={majEtat} />
-      <BlocHoteRuntimeEtMemoireCreationConteneurLab etat={etat} majEtat={majEtat} />
-      <BlocSecuriteRessourcesEtJsonCreationConteneurLab etat={etat} majEtat={majEtat} />
+        <BlocIdentiteEtCommandeCreationConteneurLab
+          etat={etat}
+          majEtat={majEtat}
+          jetonSession={jetonSession}
+        />
+        <BlocOptionsMoteurDockerCreationConteneurLab etat={etat} majEtat={majEtat} />
+        <BlocReseauEtEnvironnementCreationConteneurLab etat={etat} majEtat={majEtat} />
+        <BlocHoteRuntimeEtMemoireCreationConteneurLab etat={etat} majEtat={majEtat} />
+        <BlocSecuriteRessourcesEtJsonCreationConteneurLab etat={etat} majEtat={majEtat} />
+      </div>
 
       {modePanel ? (
         <div className="kp-creation-actions">

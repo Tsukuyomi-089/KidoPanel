@@ -1,3 +1,4 @@
+import { SegmentRepliableCreationKidoPanel } from "../interface/SegmentRepliableCreationKidoPanel.js";
 import type { EtatCreationConteneurLab } from "./etatCreationConteneurLab.js";
 import {
   AIDE_ATTACHER_STDERR,
@@ -26,8 +27,10 @@ export function BlocOptionsMoteurDockerCreationConteneurLab({
   majEtat,
 }: Props) {
   return (
-    <details style={{ marginBottom: 10 }}>
-      <summary>Plateforme, délais d’arrêt et attachement des flux (hors hostConfig)</summary>
+    <SegmentRepliableCreationKidoPanel
+      titre="Plateforme, délais d’arrêt et attachement des flux"
+      sousTitre="Champs hors hostConfig : platform, StopTimeout, réseau désactivé, attachStdin ou stdout"
+    >
       <label style={styleLabelChampCreation}>
         <span style={styleTitreChampCreation}>Plateforme d’image (platform)</span>
         <TexteAideChampCreationConteneurLab texte={AIDE_PLATEFORME_DOCKER} />
@@ -103,6 +106,6 @@ export function BlocOptionsMoteurDockerCreationConteneurLab({
           Fermer stdin après une attache unique
         </label>
       </div>
-    </details>
+    </SegmentRepliableCreationKidoPanel>
   );
 }
