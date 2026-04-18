@@ -6,8 +6,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type MutableRefObject,
   type ReactNode,
 } from "react";
+import { creerCallbacksListeEtActionsConteneurs } from "./callbacks-liste-et-actions-conteneurs-passerelle.js";
 import { construireCorpsCreationConteneurDepuisEtat } from "../lab/corpsCreationConteneurLab.js";
 import {
   etatInitialCreationConteneurLab,
@@ -60,7 +62,7 @@ export type GestionConteneursPasserelleContexte = {
     cheminSuffixe: string,
   ) => Promise<void>;
   jetonSession: string;
-  refUrlContexteErreur: React.MutableRefObject<string>;
+  refUrlContexteErreur: MutableRefObject<string>;
 };
 
 const Ctx = createContext<GestionConteneursPasserelleContexte | null>(null);
@@ -124,31 +126,17 @@ export function GestionConteneursPasserelleProvider({
     return false;
   }, []);
 
-  const rafraichirListe = useCallback(async () => {
-    setChargementListe(true);
-    setMessageErreur(null);
-    try {
-      refUrlContexteErreur.current = composerUrlPasserelle("/containers");
-      const reponse = await appelerPasserelle("/containers", { method: "GET" });
-      if (!(await afficherErreurSiBesoin(reponse))) {
-        return;
-      }
-      const donnees = (await reponse.json()) as {
-        containers?: ResumeConteneurLab[];
-      };
-      setConteneurs(Array.isArray(donnees.containers) ? donnees.containers : []);
-    } catch (e) {
-      setMessageErreur(
-        formaterErreurPourAffichagePanel(
-          e,
-          composerUrlPasserelle("/containers"),
-          "liste des instances",
-        ),
-      );
-    } finally {
-      setChargementListe(false);
-    }
-  }, [afficherErreurSiBesoin]);
+  const { rafraichirListe, actionConteneur } = useMemo(
+    () =>
+      creerCallbacksListeEtActionsConteneurs({
+        refUrlContexteErreur,
+        afficherErreurSiBesoin,
+        setConteneurs,
+        setMessageErreur,
+        setChargementListe,
+      }),
+    [afficherErreurSiBesoin],
+  );
 
   useEffect(() => {
     void rafraichirListe();
@@ -237,42 +225,6 @@ export function GestionConteneursPasserelleProvider({
             e,
             composerUrlPasserelle("/containers"),
             "création d’instance depuis gabarit",
-          ),
-        );
-      }
-    },
-    [afficherErreurSiBesoin, rafraichirListe],
-  );
-
-  const actionConteneur = useCallback(
-    async (id: string, methode: "POST" | "DELETE", cheminSuffixe: string) => {
-      setMessageErreur(null);
-      try {
-        refUrlContexteErreur.current = composerUrlPasserelle(
-          `/containers/${encodeURIComponent(id)}${cheminSuffixe}`,
-        );
-        const reponse = await appelerPasserelle(
-          `/containers/${encodeURIComponent(id)}${cheminSuffixe}`,
-          { method: methode },
-        );
-        if (!(await afficherErreurSiBesoin(reponse))) {
-          return;
-        }
-        /* Relecture HTTP trop rapide après démarrage ou arrêt : le démon peut encore renvoyer l’ancien état ; courte attente avant GET /containers. */
-        if (methode === "POST") {
-          await new Promise<void>((resolve) => {
-            window.setTimeout(resolve, 280);
-          });
-        }
-        await rafraichirListe();
-      } catch (e) {
-        setMessageErreur(
-          formaterErreurPourAffichagePanel(
-            e,
-            composerUrlPasserelle(
-              `/containers/${encodeURIComponent(id)}${cheminSuffixe}`,
-            ),
-            "action sur une instance",
           ),
         );
       }
