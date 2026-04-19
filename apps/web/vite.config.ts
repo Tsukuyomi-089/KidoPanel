@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { ClientRequest, IncomingMessage } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
@@ -31,6 +32,32 @@ export default defineConfig(({ mode }) => {
       rewrite: (chemin: string) => {
         const suite = chemin.slice(CHEMIN_PROXY_PASSERELLE_DEV.length) || "/";
         return suite.startsWith("/") ? suite : `/${suite}`;
+      },
+      /**
+       * Sans en-tête, la passerelle ne voit que `Host: 127.0.0.1:3000` (cible du proxy) : l’adresse « connexion jeu »
+       * retombe en loopback. On propage le `Host` du navigateur (`IP:5173`, domaine, etc.) pour `GET /panel/adresse-connexion-jeux`.
+       */
+      configure: (proxy: {
+        on(
+          ev: "proxyReq",
+          fn: (proxyReq: ClientRequest, req: IncomingMessage) => void,
+        ): void;
+      }) => {
+        proxy.on("proxyReq", (proxyReq, req) => {
+          const client = req.headers.host;
+          const brut =
+            typeof client === "string"
+              ? client
+              : Array.isArray(client)
+                ? client[0]
+                : "";
+          if (
+            brut.trim().length > 0 &&
+            proxyReq.getHeader("x-forwarded-host") === undefined
+          ) {
+            proxyReq.setHeader("X-Forwarded-Host", brut.trim());
+          }
+        });
       },
     },
   };

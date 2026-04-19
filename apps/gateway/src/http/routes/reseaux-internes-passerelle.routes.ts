@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { PrismaClientKnownRequestError } from "@kidopanel/database";
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -142,7 +143,7 @@ export function monterRoutesReseauxInternesPasserelle(
           sansRouteVersInternetExterne: corps.sansRouteVersInternetExterne ?? false,
         });
         return c.json({ reseauInterne: ligne }, 201);
-      } catch (erreur) {
+      } catch (erreur: unknown) {
         journaliserPasserelle({
           niveau: "error",
           message: "reseau_interne_echec_persistance_apres_docker",
@@ -150,6 +151,21 @@ export function monterRoutesReseauxInternesPasserelle(
           metadata: { nomDocker, code: String(erreur) },
         });
         await supprimerPontSurMoteurHttp(nomDocker, c.get("requestId"));
+        if (
+          erreur instanceof PrismaClientKnownRequestError &&
+          erreur.code === "P2002"
+        ) {
+          return c.json(
+            {
+              error: {
+                code: "RESEAU_INTERNE_NOM_DUPLIQUE",
+                message:
+                  "Un réseau avec ce nom d’affichage existe déjà pour votre compte. Choisissez un autre nom.",
+              },
+            },
+            409,
+          );
+        }
         throw erreur;
       }
     },

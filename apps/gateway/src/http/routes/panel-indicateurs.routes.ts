@@ -4,6 +4,7 @@ import { creerMiddlewareAuthObligatoire } from "../../auth/auth.middleware.js";
 import { prisma } from "@kidopanel/database";
 import { collecterIndicateursTableauPanel } from "../services/panel-indicateurs.service.js";
 import type { VariablesGateway } from "../types/gateway-variables.js";
+import { resoudreHotePublicConnexionJeuxDepuisRequete } from "../util/resoudre-hote-public-connexion-jeux.js";
 
 /**
  * Routes tableau de bord : agrégats santé et volumétrie conteneurs pour l’utilisateur authentifié.
@@ -39,8 +40,8 @@ export function monterRoutesPanelIndicateurs(
   });
 
   /**
-   * IP ou nom d’hôte à afficher pour les chaînes « hôte : port » des serveurs jeu (prioritaire sur le hostname du navigateur).
-   * Défini côté serveur pour les accès au panel via localhost ou tunnel SSH alors que les joueurs joignent l’IP publique du VPS.
+   * Hôte public pour « hôte : port » côté joueurs : variable d’environnement, en-têtes **`X-Forwarded-Host`** (proxy Vite
+   * ou reverse proxy) ou **`Host`** non loopback (voir **`resoudreHotePublicConnexionJeuxDepuisRequete`**).
    */
   panel.get("/adresse-connexion-jeux", async (c) => {
     const utilisateur = c.get("utilisateur");
@@ -55,9 +56,7 @@ export function monterRoutesPanelIndicateurs(
         401,
       );
     }
-    const brut = process.env.GATEWAY_PUBLIC_HOST_FOR_CLIENTS?.trim();
-    const hotePublicPourJeux =
-      brut !== undefined && brut.length > 0 ? brut : null;
+    const hotePublicPourJeux = resoudreHotePublicConnexionJeuxDepuisRequete(c);
     return c.json({ hotePublicPourJeux });
   });
 
