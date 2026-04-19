@@ -12,6 +12,8 @@ DIR_RUN="${RACINE_DEPOT}/infra/run"
 LOG_DIR="${RACINE_DEPOT}/infra/logs"
 FICHIER_MARQUEUR="${DIR_RUN}/.panel-pret"
 PID_MOTEUR="${DIR_RUN}/pid-moteur.txt"
+PID_SERVER_JEUX="${DIR_RUN}/pid-server-jeux.txt"
+PID_SERVICE_WEB_METIER="${DIR_RUN}/pid-service-web-metier.txt"
 PID_PASSERELLE="${DIR_RUN}/pid-passerelle.txt"
 PID_WEB="${DIR_RUN}/pid-web.txt"
 
@@ -697,12 +699,16 @@ reinitialiser_processus_panel() {
   mkdir -p "$DIR_RUN"
   arreter_processus_pidfichier "$PID_WEB"
   arreter_processus_pidfichier "$PID_PASSERELLE"
+  arreter_processus_pidfichier "$PID_SERVICE_WEB_METIER"
+  arreter_processus_pidfichier "$PID_SERVER_JEUX"
   arreter_processus_pidfichier "$PID_MOTEUR"
   sleep 1
   liberer_port_tcp 5175
   liberer_port_tcp 5174
   liberer_port_tcp 5173
   liberer_port_tcp 3000
+  liberer_port_tcp 8791
+  liberer_port_tcp 8790
   liberer_port_tcp 8787
   sleep 1
 }
@@ -712,17 +718,37 @@ arreter_panel() {
   reinitialiser_processus_panel
 }
 
-# Compile le package Prisma partagé, la passerelle et le moteur : `pnpm … start` exige `dist/main.js` ;
-# un redémarrage sans build complet laissait la passerelle absente ou obsolète.
+# Compile les paquets nécessaires aux processus `pnpm … start` (dist/main.js pour chaque service Node).
 compiler_passerelle_et_moteur_avant_demarrage() {
-  echo "Compilation (database → passerelle → moteur)…"
+  echo "Compilation (database → services métier → passerelle → moteur)…"
   cd "$RACINE_DEPOT"
   charger_chemin_node_si_present
   charger_env_pour_prisma
   pnpm --filter @kidopanel/database run build
+  pnpm --filter server-service run build
+  pnpm --filter web-service run build
   pnpm --filter gateway run build
   pnpm --filter container-engine run build
-  echo "Compilation passerelle / moteur terminée."
+  echo "Compilation services / passerelle / moteur terminée."
+}
+
+# Attente courte qu’un service HTTP réponde (health) après nohup.
+attendre_service_http_local() {
+  local url="$1"
+  local nom_affichage="$2"
+  local max_sec="${3:-45}"
+  local i=0
+  echo "Attente ${nom_affichage} (${url})…"
+  while [[ $i -lt $max_sec ]]; do
+    if curl -sf --connect-timeout 2 "$url" >/dev/null 2>&1; then
+      echo "${nom_affichage} joignable."
+      return 0
+    fi
+    sleep 1
+    i=$((i + 1))
+  done
+  echo_err "${nom_affichage} injoignable après ${max_sec}s — voir le journal correspondant sous ${LOG_DIR}/."
+  return 1
 }
 
 # Attend que la passerelle réponde sur 127.0.0.1:3000 avant de lancer Vite (le proxy dev pointe vers cette adresse).
@@ -743,7 +769,7 @@ attendre_passerelle_proxy() {
 demarrer_panel() {
   mkdir -p "$DIR_RUN" "$LOG_DIR"
   cd "$RACINE_DEPOT"
-  echo "Préparation : arrêt des anciens processus et libération des ports 5173–5175, 3000, 8787…"
+  echo "Préparation : arrêt des anciens processus et libération des ports 5173–5175, 3000, 8787–8791…"
   reinitialiser_processus_panel
   compiler_passerelle_et_moteur_avant_demarrage
   echo "Démarrage du panel en arrière-plan (journaux : ${LOG_DIR}/)…"
@@ -751,6 +777,17 @@ demarrer_panel() {
   nohup bash -c "[[ -f \"${CHEMIN_ENV_NODE_PANEL}\" ]] && source \"${CHEMIN_ENV_NODE_PANEL}\"; cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter container-engine start" \
     >>"${LOG_DIR}/moteur.log" 2>&1 &
   echo $! >"$PID_MOTEUR"
+
+  nohup bash -c "[[ -f \"${CHEMIN_ENV_NODE_PANEL}\" ]] && source \"${CHEMIN_ENV_NODE_PANEL}\"; cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter server-service start" \
+    >>"${LOG_DIR}/server-jeux.log" 2>&1 &
+  echo $! >"$PID_SERVER_JEUX"
+
+  nohup bash -c "[[ -f \"${CHEMIN_ENV_NODE_PANEL}\" ]] && source \"${CHEMIN_ENV_NODE_PANEL}\"; cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter web-service start" \
+    >>"${LOG_DIR}/service-web-metier.log" 2>&1 &
+  echo $! >"$PID_SERVICE_WEB_METIER"
+
+  attendre_service_http_local "http://127.0.0.1:8790/health" "Service instances jeu (server-service)" 45 || true
+  attendre_service_http_local "http://127.0.0.1:8791/health" "Service web métier (web-service)" 45 || true
 
   nohup bash -c "[[ -f \"${CHEMIN_ENV_NODE_PANEL}\" ]] && source \"${CHEMIN_ENV_NODE_PANEL}\"; cd \"$RACINE_DEPOT\" && set -a && source .env && set +a && exec pnpm --filter gateway start" \
     >>"${LOG_DIR}/passerelle.log" 2>&1 &
@@ -763,7 +800,7 @@ demarrer_panel() {
   echo $! >"$PID_WEB"
 
   sleep 3
-  echo "Processus lancés : moteur PID $(cat "$PID_MOTEUR"), passerelle $(cat "$PID_PASSERELLE"), web $(cat "$PID_WEB")."
+  echo "Processus lancés : moteur $(cat "$PID_MOTEUR"), instances jeu $(cat "$PID_SERVER_JEUX"), web métier $(cat "$PID_SERVICE_WEB_METIER"), passerelle $(cat "$PID_PASSERELLE"), web $(cat "$PID_WEB")."
 }
 
 afficher_acces_panel() {
@@ -772,7 +809,9 @@ afficher_acces_panel() {
   echo "Interface : http://127.0.0.1:5173 (ou http://IP_DU_SERVEUR:5173 — Vite écoute sur 0.0.0.0)"
   echo "Passerelle : http://127.0.0.1:3000 (accès distant : via proxy Vite, pas besoin d’ouvrir le 3000 si apps/web/.env n’impose pas VITE_GATEWAY_BASE_URL vers :3000)"
   echo "Pare-feu / fournisseur cloud : ouvrir le port TCP 5173 pour l’interface depuis votre PC (ex. ufw allow 5173/tcp && ufw reload)."
-  echo "Journaux : tail -f \"${LOG_DIR}/moteur.log\" … passerelle.log … web.log"
+  echo "Serveurs de jeu : service HTTP http://127.0.0.1:8790 (création Minecraft / instances jeu via la passerelle)."
+  echo "Hébergement web : service HTTP http://127.0.0.1:8791 (containers applicatifs / proxy manager)."
+  echo "Journaux : tail -f \"${LOG_DIR}/moteur.log\" … server-jeux.log … service-web-metier.log … passerelle.log … web.log"
   echo "Arrêt / mise à jour : relancez ce script pour le menu."
   echo ""
 }
