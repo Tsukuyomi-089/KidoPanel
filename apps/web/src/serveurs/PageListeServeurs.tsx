@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { CarteServeur } from "./composants/CarteServeur.js";
+import { BasculeAffichageHotePublicConnexion } from "./composants/BasculeAffichageHotePublicConnexion.js";
+import { BandeauDiagnosticPareFeuHote } from "../interface/BandeauDiagnosticPareFeuHote.js";
 import {
   listerInstancesServeursJeuxPasserelle,
   type InstanceServeurJeuxPasserelle,
@@ -70,6 +72,8 @@ export function PageListeServeurs() {
         Le service instances jeu doit tourner sur la machine (par défaut port 8790) ; sinon définissez{" "}
         <code className="kp-cellule-mono">SERVER_SERVICE_BASE_URL</code> sur la passerelle.
       </p>
+      <BasculeAffichageHotePublicConnexion />
+      <BandeauDiagnosticPareFeuHote lieuAffichage="Serveurs de jeu" />
       {erreur !== null ? (
         <pre className="kp-cellule-mono kp-marges-haut-sm" role="alert">
           {erreur}

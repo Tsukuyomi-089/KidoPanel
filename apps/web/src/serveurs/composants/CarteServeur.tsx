@@ -36,7 +36,7 @@ export function CarteServeur({
   surMiseAJourPartielle,
 }: PropsCarteServeur) {
   const { pousserToast } = useToastKidoPanel();
-  const { hotePublicPourJeux } = useHotePublicConnexionJeux();
+  const { hotePublicPourJeux, prefererHoteNavigateur } = useHotePublicConnexionJeux();
   const statutBadge = statutBadgeDepuisChaineApi(instance.status);
   const [patient, setPatient] = useState(false);
   const refDialogSuppression = useRef<HTMLDialogElement>(null);
@@ -144,6 +144,7 @@ export function CarteServeur({
             {construireAdresseConnexionJeux({
               port: instance.port,
               hotePublicConfigurePasserelle: hotePublicPourJeux,
+              forcerHotePageNavigateur: prefererHoteNavigateur,
             })}
           </span>
         </p>

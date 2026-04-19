@@ -1,20 +1,34 @@
 /**
- * Fabrique « hôte : port » pour les joueurs : variable passerelle **`GATEWAY_PUBLIC_HOST_FOR_CLIENTS`** en priorité,
- * sinon le hostname de la page (localhost ramené à 127.0.0.1).
+ * Fabrique « hôte : port » pour les joueurs.
+ *
+ * Ordre de priorité :
+ * 1. **`forcerHotePageNavigateur=true`** : utilise toujours le hostname de la page (utile pour tester en LAN
+ *    quand la passerelle a détecté l’IP publique du FAI mais que vous ouvrez le panel via l’IP locale).
+ * 2. Sinon, l’hôte fourni par la passerelle (`GATEWAY_PUBLIC_HOST_FOR_CLIENTS`) s’il est défini.
+ * 3. Sinon, le hostname de la page (`window.location.hostname`, loopback ramené à 127.0.0.1).
  */
 export function construireAdresseConnexionJeux(params: {
   port: number;
   hotePublicConfigurePasserelle?: string | null;
+  forcerHotePageNavigateur?: boolean;
 }): string {
+  const hoteNavigateur =
+    typeof window !== "undefined"
+      ? window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1" ||
+        window.location.hostname === "[::1]"
+        ? "127.0.0.1"
+        : window.location.hostname
+      : "";
+  if (params.forcerHotePageNavigateur === true && hoteNavigateur.length > 0) {
+    return `${hoteNavigateur}:${String(params.port)}`;
+  }
   const pref = params.hotePublicConfigurePasserelle?.trim();
   if (pref !== undefined && pref.length > 0) {
     return `${pref}:${String(params.port)}`;
   }
-  if (typeof window === "undefined") {
+  if (hoteNavigateur.length === 0) {
     return `:${String(params.port)}`;
   }
-  const h = window.location.hostname;
-  const hote =
-    h === "localhost" || h === "127.0.0.1" || h === "[::1]" ? "127.0.0.1" : h;
-  return `${hote}:${String(params.port)}`;
+  return `${hoteNavigateur}:${String(params.port)}`;
 }
