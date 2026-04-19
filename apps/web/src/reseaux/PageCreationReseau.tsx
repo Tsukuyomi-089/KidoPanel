@@ -11,16 +11,20 @@ export function PageCreationReseau() {
   const [cidr, setCidr] = useState("10.10.1.0/24");
   const [sansInternet, setSansInternet] = useState(false);
   const [patient, setPatient] = useState(false);
+  const [erreurDerniereTentative, setErreurDerniereTentative] = useState<string | null>(null);
 
   const gererSoumission = async (ev: FormEvent) => {
     ev.preventDefault();
     const n = nom.trim();
     const c = cidr.trim();
     if (n.length === 0 || c.length === 0) {
-      pousserToast("Nom et CIDR obligatoires.", "erreur");
+      const msg = "Nom et CIDR obligatoires.";
+      setErreurDerniereTentative(msg);
+      pousserToast(msg, "erreur");
       return;
     }
     setPatient(true);
+    setErreurDerniereTentative(null);
     try {
       await creerReseauInternePasserelle({
         nomAffichage: n,
@@ -30,7 +34,9 @@ export function PageCreationReseau() {
       pousserToast("Réseau créé.", "succes");
       navigate("/reseaux");
     } catch (e) {
-      pousserToast(e instanceof Error ? e.message : "Création impossible.", "erreur");
+      const msg = e instanceof Error ? e.message : "Création impossible.";
+      setErreurDerniereTentative(msg);
+      pousserToast(msg, "erreur");
     } finally {
       setPatient(false);
     }
@@ -81,6 +87,22 @@ export function PageCreationReseau() {
         <button type="submit" className="kp-btn kp-btn--primaire kp-marges-haut-sm" disabled={patient}>
           Créer le réseau
         </button>
+        {erreurDerniereTentative !== null ? (
+          <pre
+            className="kp-cellule-mono kp-marges-haut-sm"
+            role="alert"
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              border: "1px solid var(--kp-couleur-bordure-erreur, rgba(220, 80, 80, 0.6))",
+              borderRadius: "0.4rem",
+              padding: "0.55rem 0.7rem",
+              fontSize: "0.82rem",
+            }}
+          >
+            <strong>Création refusée :</strong> {erreurDerniereTentative}
+          </pre>
+        ) : null}
       </form>
     </>
   );

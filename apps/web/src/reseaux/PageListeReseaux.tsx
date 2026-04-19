@@ -9,6 +9,7 @@ import { listerInstancesServeursJeuxPasserelle } from "../passerelle/serviceServ
 import { listerWebInstancesPasserelle } from "../passerelle/serviceWebInstancesPasserelle.js";
 import { CarteReseau } from "./composants/CarteReseau.js";
 import { useToastKidoPanel } from "../interface/useToastKidoPanel.js";
+import { BandeauDiagnosticPareFeuHote } from "../interface/BandeauDiagnosticPareFeuHote.js";
 
 function compterParReseau(
   idReseau: string,
@@ -67,11 +68,11 @@ export function PageListeReseaux() {
     const echecWeb = resWeb.status === "rejected";
     setAvertissementComptage(
       echecJeu && echecWeb
-        ? "Les listes d’instances jeu et web sont momentanément indisponibles : le comptage par pont peut être incomplet ; la liste des ponts ci-dessous reste exacte."
+        ? "Comptage des instances par pont indisponible (services jeu et web injoignables). La liste des ponts ci-dessous reste correcte ; la création et la suppression de réseaux fonctionnent normalement."
         : echecWeb
-          ? "Instances web non chargées (service métier sur le port 8791 absent ou injoignable). Le comptage « sites par pont » reste vide ; la liste des ponts ci-dessous est inchangée. Démarrez `web-service` si vous utilisez l’hébergement web ; sinon vous pouvez ignorer cet avertissement."
+          ? "Comptage « sites par pont » indisponible : service d’hébergement web (`web-service`, port 8791) non démarré. Sans hébergement web, ignorez cet avertissement — la liste des ponts et la création / suppression de réseaux fonctionnent normalement."
           : echecJeu
-            ? "La liste des instances jeu est indisponible : le comptage par pont peut être incomplet."
+            ? "Comptage « serveurs jeu par pont » indisponible : service jeu (`server-service`, port 8790) non démarré. La liste des ponts ci-dessous reste correcte ; la création et la suppression de réseaux fonctionnent normalement."
             : null,
     );
   }, []);
@@ -119,15 +120,33 @@ export function PageListeReseaux() {
           {erreur}
         </pre>
       ) : null}
+      <BandeauDiagnosticPareFeuHote lieuAffichage="Réseaux privés" />
       {avertissementComptage !== null ? (
-        <p className="kp-texte-muted kp-marges-haut-sm" role="status">
-          {avertissementComptage}
-        </p>
+        <div
+          className="kp-bandeau-info kp-marges-haut-sm"
+          role="status"
+          style={{
+            border: "1px solid var(--kp-couleur-bordure-douce, rgba(255,255,255,0.12))",
+            borderRadius: "0.5rem",
+            padding: "0.6rem 0.75rem",
+            fontSize: "0.85rem",
+            display: "flex",
+            gap: "0.5rem",
+            alignItems: "flex-start",
+          }}
+        >
+          <span aria-hidden style={{ fontWeight: 600 }}>i</span>
+          <span>
+            <strong>Information (n’empêche pas la création)</strong> — {avertissementComptage}
+          </span>
+        </div>
       ) : null}
       {reseaux === null ? (
-        <p className="kp-texte-muted">Chargement…</p>
+        <p className="kp-texte-muted kp-marges-haut-sm">Chargement…</p>
       ) : reseaux.length === 0 ? (
-        <p className="kp-texte-muted">Aucun réseau pour l’instant.</p>
+        <p className="kp-texte-muted kp-marges-haut-sm">
+          Aucun réseau pour l’instant. Cliquez sur « Créer un réseau » ci-dessus pour ajouter votre premier pont privé.
+        </p>
       ) : (
         <div className="kp-grille-cartes-serveurs kp-marges-haut-sm">
           {reseaux.map((r) => (
