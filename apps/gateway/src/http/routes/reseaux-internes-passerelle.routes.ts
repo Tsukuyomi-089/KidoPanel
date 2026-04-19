@@ -78,13 +78,22 @@ export function monterRoutesReseauxInternesPasserelle(
         corpsRemplacement: new TextEncoder().encode(corpsMoteur),
         cheminRelaisForceSurMoteur: "/reseaux-internes",
       });
+      /** Lecture unique du corps amont : évite tout épuisement de flux avant persistance Prisma. */
+      const corpsAmont = await amont.text();
       if (!amont.ok) {
-        return amont;
+        return new Response(corpsAmont, {
+          status: amont.status,
+          headers: {
+            "Content-Type":
+              amont.headers.get("Content-Type") ??
+              "application/json; charset=utf-8",
+          },
+        });
       }
       let sousReseauEffectif = corps.sousReseauCidr.trim();
       let passerelleEffectif = "";
       try {
-        const parse = JSON.parse(await amont.text()) as {
+        const parse = JSON.parse(corpsAmont) as {
           sousReseauCidr?: string;
           passerelleIpv4?: string;
         };

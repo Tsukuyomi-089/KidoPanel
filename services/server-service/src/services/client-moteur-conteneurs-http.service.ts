@@ -34,7 +34,7 @@ export class ClientMoteurConteneursHttp {
     for (const port of params.gabarit.defaultPorts) {
       const cle = `${String(port)}/tcp`;
       portsExposes.push(cle);
-      liaisonsPorts[cle] = [{ hostIp: "", hostPort: "0" }];
+      liaisonsPorts[cle] = [{ hostIp: "0.0.0.0", hostPort: "0" }];
     }
     const corps: CorpsCreationConteneurMoteur = {
       name: params.nomConteneur,

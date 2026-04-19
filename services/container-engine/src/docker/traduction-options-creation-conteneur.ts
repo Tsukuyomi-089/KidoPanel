@@ -50,7 +50,7 @@ function liaisonsPortsVersDocker(
   const sortie: Record<string, DockerPortBinding[]> = {};
   for (const [portConteneur, liste] of Object.entries(liaisons)) {
     sortie[portConteneur] = liste.map((liaison) => ({
-      HostIp: liaison.hostIp ?? "",
+      HostIp: liaison.hostIp ?? "0.0.0.0",
       HostPort: liaison.hostPort,
     }));
   }

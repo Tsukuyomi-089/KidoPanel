@@ -582,6 +582,62 @@ assurer_database_url_si_postgres_docker() {
   echo "DATABASE_URL défini pour le conteneur PostgreSQL du compose (kydopanel@127.0.0.1:5432)."
 }
 
+# Détecte l’IPv4 publique de l’hôte et l’écrit dans .env si GATEWAY_PUBLIC_HOST_FOR_CLIENTS est absent ou vide.
+detecter_et_ecrire_ip_publique_gateway() {
+  [[ -f "$RACINE_DEPOT/.env" ]] || return 0
+  local val_existante
+  val_existante="$(grep '^GATEWAY_PUBLIC_HOST_FOR_CLIENTS=' "$RACINE_DEPOT/.env" 2>/dev/null | head -n1 | cut -d= -f2- | tr -d '\r' || true)"
+  if [[ -n "${val_existante// /}" ]]; then
+    echo "GATEWAY_PUBLIC_HOST_FOR_CLIENTS déjà défini (${val_existante}) : conservé."
+    return 0
+  fi
+  local ip_publique=""
+  ip_publique="$(curl -sf --connect-timeout 4 https://api.ipify.org 2>/dev/null || true)"
+  if [[ -z "${ip_publique// /}" ]]; then
+    ip_publique="$(curl -sf --connect-timeout 4 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ -z "${ip_publique// /}" ]]; then
+    ip_publique="$(curl -sf --connect-timeout 4 https://ifconfig.me 2>/dev/null | tr -d '[:space:]' || true)"
+  fi
+  if [[ "$ip_publique" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+    printf '\n%s\n' "GATEWAY_PUBLIC_HOST_FOR_CLIENTS=${ip_publique}" >>"$RACINE_DEPOT/.env"
+    echo "IP publique détectée et écrite : GATEWAY_PUBLIC_HOST_FOR_CLIENTS=${ip_publique}"
+  else
+    echo "Avertissement : IP publique non détectée automatiquement ; renseignez GATEWAY_PUBLIC_HOST_FOR_CLIENTS dans .env pour l’affichage « connexion jeu »."
+  fi
+}
+
+# Propose sudo NOPASSWD pour firewall-cmd et ufw (utilisateur courant) si les droits le permettent.
+configurer_sudoers_parefeu_si_possible() {
+  local utilisateur
+  utilisateur="$(id -un)"
+  [[ "$utilisateur" == "root" ]] && return 0
+
+  local fichier_sudoers="/etc/sudoers.d/kidopanel-parefeu"
+  local lignes=()
+  if command -v firewall-cmd >/dev/null 2>&1; then
+    lignes+=("${utilisateur} ALL=(ALL) NOPASSWD: $(command -v firewall-cmd)")
+  fi
+  if command -v ufw >/dev/null 2>&1; then
+    lignes+=("${utilisateur} ALL=(ALL) NOPASSWD: $(command -v ufw)")
+  fi
+  [[ ${#lignes[@]} -eq 0 ]] && return 0
+
+  if command -v sudo >/dev/null 2>&1 && sudo -n test -d /etc/sudoers.d 2>/dev/null; then
+    {
+      for ligne in "${lignes[@]}"; do
+        printf '%s\n' "$ligne"
+      done
+    } | sudo tee "$fichier_sudoers" >/dev/null
+    sudo chmod 440 "$fichier_sudoers"
+    echo "Sudoers pare-feu : ${fichier_sudoers}"
+  else
+    echo "Avertissement : impossible d’écrire sudoers automatiquement (sudo NOPASSWD ou root requis)."
+    echo "Pour l’ouverture automatique des ports Docker sur le pare-feu hôte, ajoutez par exemple :"
+    printf '  %s\n' "${lignes[@]}"
+  fi
+}
+
 # Crée ou complète le .env racine : copie depuis .env.example si besoin, puis secrets et base de données par défaut.
 preparer_fichier_env_racine() {
   [[ -f "$RACINE_DEPOT/.env.example" ]] || {
@@ -596,6 +652,7 @@ preparer_fichier_env_racine() {
   fi
   assurer_gateway_jwt_secret_env_racine
   assurer_database_url_si_postgres_docker
+  detecter_et_ecrire_ip_publique_gateway
 }
 
 preparer_env_web() {
@@ -834,6 +891,7 @@ installation_premiere_fois() {
   fi
   preparer_fichier_env_racine
   preparer_env_web
+  configurer_sudoers_parefeu_si_possible
   [[ -f "$RACINE_DEPOT/.env" ]] || exit 1
   etapes_dependances_build
   panel_marque_comme_pret
@@ -851,6 +909,7 @@ mettre_a_jour_et_redemarrer() {
     echo_err ".env manquant."
     return 1
   }
+  configurer_sudoers_parefeu_si_possible
   arreter_panel
   etapes_dependances_build
   demarrer_panel
@@ -867,6 +926,7 @@ redemarrer_seulement() {
     return 1
   }
   [[ "$SANS_POSTGRES_DOCKER" -eq 0 ]] && demarrer_postgres_et_attendre || assurer_docker_moteur
+  configurer_sudoers_parefeu_si_possible
   arreter_panel
   demarrer_panel
   afficher_acces_panel

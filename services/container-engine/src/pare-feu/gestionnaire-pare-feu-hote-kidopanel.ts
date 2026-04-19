@@ -10,6 +10,7 @@ import {
   RepositoryEtatPareFeuHoteKidopanel,
   resoudreCheminFichierEtatPareFeuDepuisEnv,
 } from "./repository-etat-pare-feu-hote-kidopanel.js";
+import { redigerMessageDiagnosticAucunBackendPareFeuActif } from "./diagnostic-backend-pare-feu-inactif.js";
 import { obtenirBackendPareFeuHote } from "./selection-backend-pare-feu-hote.js";
 import type { PublicationHotePareFeu } from "./types-publication-hote-pare-feu.js";
 
@@ -57,6 +58,12 @@ export class GestionnairePareFeuHoteKidopanel {
           process.env.CONTAINER_ENGINE_PAREFEU_BACKEND ?? "(auto)",
         uidEffectif:
           typeof process.geteuid === "function" ? process.geteuid() : undefined,
+        ...(backend === null
+          ? {
+              diagnosticSansBackendActif:
+                redigerMessageDiagnosticAucunBackendPareFeuActif(),
+            }
+          : {}),
       },
     });
   }
@@ -157,6 +164,8 @@ export class GestionnairePareFeuHoteKidopanel {
               protocole: pub.protocole,
               erreur: res.messageErreur,
               backend: res.backend,
+              conseil:
+                "Vérifier sudo NOPASSWD pour firewall-cmd ou ufw (voir .env.example), ou exécuter le moteur en root ; variable CONTAINER_ENGINE_PAREFEU_BACKEND si besoin.",
             },
           });
         } else {
