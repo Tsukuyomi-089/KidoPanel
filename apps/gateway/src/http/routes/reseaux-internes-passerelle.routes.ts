@@ -6,6 +6,7 @@ import type { ReseauInterneUtilisateurRepository } from "../../auth/reseau-inter
 import { creerMiddlewareAuthObligatoire } from "../../auth/auth.middleware.js";
 import { getContainerEngineBaseUrl } from "../../config/gateway-env.js";
 import { journaliserPasserelle } from "../../observabilite/journal-json.js";
+import { deduirePasserelleParDefautDepuisCidrIpv4 } from "../../reseaux/deduire-passerelle-par-defaut-depuis-cidr-ipv4.js";
 import { EN_TETE_ID_REQUETE_INTERNE } from "../constantes-correlation-http.js";
 import { forwardRequestToContainerEngine } from "../proxy/container-engine-proxy.js";
 import type { VariablesGateway } from "../types/gateway-variables.js";
@@ -87,10 +88,16 @@ export function monterRoutesReseauxInternesPasserelle(
           passerelleIpv4?: string;
         };
         if (typeof parse.sousReseauCidr === "string") {
-          sousReseauEffectif = parse.sousReseauCidr;
+          sousReseauEffectif = parse.sousReseauCidr.trim();
         }
         if (typeof parse.passerelleIpv4 === "string") {
-          passerelleEffectif = parse.passerelleIpv4;
+          passerelleEffectif = parse.passerelleIpv4.trim();
+        }
+        if (passerelleEffectif.length === 0) {
+          const deduite = deduirePasserelleParDefautDepuisCidrIpv4(sousReseauEffectif);
+          if (deduite !== undefined) {
+            passerelleEffectif = deduite;
+          }
         }
       } catch {
         journaliserPasserelle({
