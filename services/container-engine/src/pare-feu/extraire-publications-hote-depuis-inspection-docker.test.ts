@@ -19,6 +19,23 @@ describe("extrairePublicationsHoteNonLoopbackDepuisInspection", () => {
     ).toEqual([]);
   });
 
+  it("accepte les clés de port en majuscules (TCP)", () => {
+    const inspection = {
+      NetworkSettings: {
+        Ports: {
+          "25565/TCP": [{ HostIp: "0.0.0.0", HostPort: "45123" }],
+        },
+      },
+    };
+    expect(
+      extrairePublicationsHoteNonLoopbackDepuisInspection(
+        inspection as Parameters<
+          typeof extrairePublicationsHoteNonLoopbackDepuisInspection
+        >[0],
+      ),
+    ).toEqual([{ numero: 45123, protocole: "tcp" }]);
+  });
+
   it("retient un port hôte publié sur 0.0.0.0", () => {
     const inspection = {
       NetworkSettings: {

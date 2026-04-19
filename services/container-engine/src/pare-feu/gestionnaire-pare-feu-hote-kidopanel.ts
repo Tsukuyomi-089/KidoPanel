@@ -1,6 +1,6 @@
 import type { DockerClient } from "../docker-connection.js";
 import { journaliserMoteur } from "../observabilite/journal-json.js";
-import { extrairePublicationsHoteNonLoopbackDepuisInspection } from "./extraire-publications-hote-depuis-inspection-docker.js";
+import { collecterPublicationsHoteApresDemarrageDocker } from "./collecter-publications-hote-apres-demarrage-docker.js";
 import {
   fermerPortFirewalldHote,
   ouvrirPortFirewalldHote,
@@ -76,15 +76,30 @@ export class GestionnairePareFeuHoteKidopanel {
     }
     await this.journaliserEtatFirewalldSiBesoin(options?.requestId);
 
-    let inspection;
+    let publications: PublicationHotePareFeu[];
+    let idCanonique: string;
     try {
-      inspection = await docker.getContainer(idConteneur).inspect();
+      const recolte = await collecterPublicationsHoteApresDemarrageDocker(
+        docker,
+        idConteneur,
+      );
+      publications = recolte.publications;
+      idCanonique = recolte.idCanonique;
     } catch {
       return;
     }
 
-    const publications = extrairePublicationsHoteNonLoopbackDepuisInspection(inspection);
-    const idCanonique = inspection.Id;
+    if (publications.length === 0) {
+      journaliserMoteur({
+        niveau: "info",
+        message: "pare_feu_hote_sans_publication_hote_a_ouvrir",
+        requestId: options?.requestId,
+        metadata: {
+          idConteneurDocker: idCanonique,
+          note: "Normal si le conteneur ne publie aucun port sur l’hôte.",
+        },
+      });
+    }
 
     if (publications.length > 0) {
       journaliserMoteur({

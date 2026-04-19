@@ -15,16 +15,23 @@ export function extrairePublicationsHoteNonLoopbackDepuisInspection(
   const vu = new Map<string, PublicationHotePareFeu>();
 
   for (const [clePort, liaisons] of Object.entries(ports)) {
-    const correspondance = /^(\d+)\/(tcp|udp)$/.exec(clePort);
+    const correspondance = /^(\d+)\/(tcp|udp)$/i.exec(clePort);
     if (!correspondance) {
       continue;
     }
-    const protocole = correspondance[2] as "tcp" | "udp";
+    const protocole = correspondance[2].toLowerCase() as "tcp" | "udp";
     if (!Array.isArray(liaisons) || liaisons.length === 0) {
       continue;
     }
+    /**
+     * Liaison Docker : HostIp vide signifie souvent « toutes les interfaces » (équivalent 0.0.0.0),
+     * pas la loopback ; on n’ignore que lorsque toutes les liaisons sont explicitement localhost.
+     */
     const uniquementLoopback = liaisons.every((liaison) => {
       const ip = typeof liaison.HostIp === "string" ? liaison.HostIp.trim() : "";
+      if (ip.length === 0) {
+        return false;
+      }
       return ip === "127.0.0.1" || ip === "::1";
     });
     if (uniquementLoopback) {
