@@ -42,6 +42,10 @@ import {
   construireSuggestionConfigurationDepuisInspectionImage,
   type SuggestionConfigurationImageDocker,
 } from "./docker/suggestion-config-depuis-image.service.js";
+import {
+  type GestionnairePareFeuHoteKidopanel,
+  creerGestionnairePareFeuHoteKidopanelDepuisEnv,
+} from "./pare-feu/gestionnaire-pare-feu-hote-kidopanel.js";
 
 /** Options du constructeur : client injecté ou paramètres de connexion explicites. */
 export interface ContainerEngineOptions {
@@ -51,6 +55,11 @@ export interface ContainerEngineOptions {
    * Service de journaux `.log` par conteneur : instance dédiée, ou `false` pour désactiver (tests).
    */
   journauxFichierConteneur?: ServiceJournauxFichierConteneur | false;
+  /**
+   * Gestion pare-feu hôte (firewalld) pour les ports publiés : instance injectée, `false` pour désactiver,
+   * ou défaut `undefined` pour lire `CONTAINER_ENGINE_PAREFEU_AUTO`.
+   */
+  pareFeuHote?: GestionnairePareFeuHoteKidopanel | false;
 }
 
 /**
@@ -61,6 +70,7 @@ export class ContainerEngine {
   private readonly docker: DockerClient;
   private readonly serviceTirageImage: ServiceTirageImageMoteur;
   private readonly journauxFichierConteneur: ServiceJournauxFichierConteneur | undefined;
+  private readonly pareFeuHote: GestionnairePareFeuHoteKidopanel | undefined;
 
   constructor(options?: ContainerEngineOptions) {
     if (options?.docker) {
@@ -75,6 +85,13 @@ export class ContainerEngine {
       this.journauxFichierConteneur =
         options?.journauxFichierConteneur ??
         creerServiceJournauxFichierConteneur(this.docker);
+    }
+    if (options?.pareFeuHote === false) {
+      this.pareFeuHote = undefined;
+    } else if (options?.pareFeuHote) {
+      this.pareFeuHote = options.pareFeuHote;
+    } else {
+      this.pareFeuHote = creerGestionnairePareFeuHoteKidopanelDepuisEnv();
     }
   }
 
@@ -203,6 +220,7 @@ export class ContainerEngine {
     } catch (e) {
       wrapDockerError(e);
     }
+    void this.pareFeuHote?.apresDemarrageConteneur(id, this.docker);
     this.journauxFichierConteneur?.notifierDemarrageEtDemarrerSuiviSortie(
       id,
       depuisEpochSecondes,
@@ -230,6 +248,7 @@ export class ContainerEngine {
   }
 
   async removeContainer(id: string, options?: { force?: boolean }): Promise<void> {
+    await this.pareFeuHote?.avantSuppressionConteneur(id);
     const idComplet = await this.journauxFichierConteneur?.obtenirIdCompletSiPossible(id);
     await this.journauxFichierConteneur?.arreterSuiviSortie(id);
     try {

@@ -809,6 +809,7 @@ afficher_acces_panel() {
   echo "Interface : http://127.0.0.1:5173 (ou http://IP_DU_SERVEUR:5173 — Vite écoute sur 0.0.0.0)"
   echo "Passerelle : http://127.0.0.1:3000 (accès distant : via proxy Vite, pas besoin d’ouvrir le 3000 si apps/web/.env n’impose pas VITE_GATEWAY_BASE_URL vers :3000)"
   echo "Pare-feu / fournisseur cloud : ouvrir le port TCP 5173 pour l’interface depuis votre PC (ex. ufw allow 5173/tcp && ufw reload)."
+  echo "Conteneurs : avec firewalld actif et droits sudo pour firewall-cmd (NOPASSWD recommandé), le moteur ouvre automatiquement les ports TCP/UDP publiés par Docker ; liste dans donnees/pare-feu-hote-kidopanel.json (fermée via le menu désinstallation)."
   echo "Serveurs de jeu : service HTTP http://127.0.0.1:8790 (création Minecraft / instances jeu via la passerelle)."
   echo "Hébergement web : service HTTP http://127.0.0.1:8791 (containers applicatifs / proxy manager)."
   echo "Journaux : tail -f \"${LOG_DIR}/moteur.log\" … server-jeux.log … service-web-metier.log … passerelle.log … web.log"
@@ -880,6 +881,14 @@ menu_desinstaller() {
     return 0
   }
   arreter_panel
+  read -r -p "Fermer dans firewalld les ports TCP/UDP enregistrés pour les conteneurs (fichier donnees/pare-feu-hote-kidopanel.json) ? [o/N] " c_fw
+  if [[ "$c_fw" == "o" || "$c_fw" == "O" ]]; then
+    if [[ -f "${RACINE_DEPOT}/infra/fermer-pare-feu-kidopanel.sh" ]]; then
+      bash "${RACINE_DEPOT}/infra/fermer-pare-feu-kidopanel.sh" "$RACINE_DEPOT" || echo_err "Fermeture pare-feu : consulter les messages ci-dessus."
+    else
+      echo_err "Script infra/fermer-pare-feu-kidopanel.sh introuvable."
+    fi
+  fi
   read -r -p "Supprimer node_modules à la racine du dépôt ? [o/N] " c2
   if [[ "$c2" == "o" || "$c2" == "O" ]]; then
     rm -rf "${RACINE_DEPOT}/node_modules"
