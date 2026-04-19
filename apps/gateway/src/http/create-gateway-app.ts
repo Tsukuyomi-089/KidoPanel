@@ -17,6 +17,7 @@ import { monterRoutesProxyConteneurs } from "./routes/containers-proxy.routes.js
 import { monterRouteCatalogueImagesPasserelle } from "./routes/images-catalogue-passerelle.routes.js";
 import { monterRouteTemplatesCataloguePasserelle } from "./routes/templates-catalogue-passerelle.routes.js";
 import { monterRoutesPanelIndicateurs } from "./routes/panel-indicateurs.routes.js";
+import { monterRoutesDiagnosticPareFeuPasserelle } from "./routes/diagnostic-pare-feu-passerelle.routes.js";
 import { monterRoutesRacineEtSante } from "./routes/root-and-health.routes.js";
 import { creerMiddlewareRateLimit } from "./middleware/rate-limit.middleware.js";
 import { creerMiddlewareCorsPanel } from "./middleware/cors-panel.middleware.js";
@@ -54,6 +55,7 @@ export function createGatewayApp(): Hono<{ Variables: VariablesGateway }> {
   app.get("/metrics", routeMetriquesPasserelle);
   monterRoutesAuth(app, serviceAuth);
   monterRoutesPanelIndicateurs(app, secretJwt, depotPropriete);
+  monterRoutesDiagnosticPareFeuPasserelle(app, secretJwt);
   monterRoutesProxyConteneurs(app, secretJwt, depotPropriete);
   monterRoutesReseauxInternesPasserelle(app, secretJwt, depotReseauxInternes);
   monterRouteCatalogueImagesPasserelle(app, secretJwt);

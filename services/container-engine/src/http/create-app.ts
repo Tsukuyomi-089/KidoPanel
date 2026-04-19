@@ -7,6 +7,7 @@ import {
 } from "./middleware/correlation-requete.middleware.js";
 import { tryRespondWithEngineError } from "./respond-route-error.js";
 import { mountContainerRoutes } from "./routes/containers.routes.js";
+import { mountDiagnosticPareFeuRoutes } from "./routes/diagnostic-pare-feu.routes.js";
 import { mountImagesRoutes } from "./routes/images.routes.js";
 import { mountReseauxInternesRoutes } from "./routes/reseaux-internes.routes.js";
 import type { VariablesMoteurHttp } from "./variables-moteur-http.js";
@@ -52,6 +53,7 @@ export function createEngineHttpApp(engine: ContainerEngine): Hono<{
   mountContainerRoutes(app, engine);
   mountImagesRoutes(app, engine);
   mountReseauxInternesRoutes(app, engine);
+  mountDiagnosticPareFeuRoutes(app);
 
   app.notFound((c) =>
     c.json(
