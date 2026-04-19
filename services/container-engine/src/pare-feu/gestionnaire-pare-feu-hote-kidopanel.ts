@@ -10,7 +10,7 @@ import {
   RepositoryEtatPareFeuHoteKidopanel,
   resoudreCheminFichierEtatPareFeuDepuisEnv,
 } from "./repository-etat-pare-feu-hote-kidopanel.js";
-import { redigerMessageDiagnosticAucunBackendPareFeuActif } from "./diagnostic-backend-pare-feu-inactif.js";
+import { obtenirMessageDiagnosticAucunBackendPareFeuActif } from "./diagnostic-backend-pare-feu-inactif.js";
 import { obtenirBackendPareFeuHote } from "./selection-backend-pare-feu-hote.js";
 import type { PublicationHotePareFeu } from "./types-publication-hote-pare-feu.js";
 
@@ -45,6 +45,8 @@ export class GestionnairePareFeuHoteKidopanel {
     }
     this.journalBackendPareFeuDejaEmis = true;
     const backend = await obtenirBackendPareFeuHote();
+    const diagnosticSansBackendActif =
+      backend === null ? await obtenirMessageDiagnosticAucunBackendPareFeuActif() : undefined;
     journaliserMoteur({
       niveau: backend === null ? "warn" : "info",
       message:
@@ -58,11 +60,8 @@ export class GestionnairePareFeuHoteKidopanel {
           process.env.CONTAINER_ENGINE_PAREFEU_BACKEND ?? "(auto)",
         uidEffectif:
           typeof process.geteuid === "function" ? process.geteuid() : undefined,
-        ...(backend === null
-          ? {
-              diagnosticSansBackendActif:
-                redigerMessageDiagnosticAucunBackendPareFeuActif(),
-            }
+        ...(diagnosticSansBackendActif !== undefined
+          ? { diagnosticSansBackendActif }
           : {}),
       },
     });
@@ -165,7 +164,7 @@ export class GestionnairePareFeuHoteKidopanel {
               erreur: res.messageErreur,
               backend: res.backend,
               conseil:
-                "Vérifier sudo NOPASSWD pour firewall-cmd ou ufw (voir .env.example), ou exécuter le moteur en root ; variable CONTAINER_ENGINE_PAREFEU_BACKEND si besoin.",
+                "Vérifiez que le processus moteur a accès à sudo NOPASSWD pour firewall-cmd ou ufw. Voir .env.example (CONTAINER_ENGINE_PAREFEU_BACKEND).",
             },
           });
         } else {

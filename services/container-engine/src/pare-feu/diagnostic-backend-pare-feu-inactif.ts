@@ -1,16 +1,39 @@
-import { existsSync } from "node:fs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 /**
- * Message d’aide lorsque ni firewalld ni UFW n’est détecté comme actif alors que les binaires peuvent être présents.
+ * Résout le chemin absolu d’une commande via le shell POSIX (`command -v`), sans injection
+ * (noms fixes firewall-cmd / ufw uniquement).
  */
-export function redigerMessageDiagnosticAucunBackendPareFeuActif(): string {
-  const cheminsFirewalld = ["/usr/bin/firewall-cmd", "/bin/firewall-cmd"];
-  const cheminsUfw = ["/usr/sbin/ufw", "/sbin/ufw"];
-  if (cheminsFirewalld.some((p) => existsSync(p))) {
-    return "firewalld semble installé mais le service ne répond pas ou est inactif ; démarrez-le : sudo systemctl start firewalld";
+async function cheminAbsoluCommandeOuVide(nomCommande: "firewall-cmd" | "ufw"): Promise<string> {
+  try {
+    const { stdout } = await execFileAsync("/bin/sh", ["-c", `command -v '${nomCommande}'`], {
+      timeout: 3000,
+      maxBuffer: 512,
+    });
+    const ligne = stdout.toString().trim().split(/\r?\n/).at(0)?.trim();
+    return ligne ?? "";
+  } catch {
+    return "";
   }
-  if (cheminsUfw.some((p) => existsSync(p))) {
-    return "UFW semble installé mais inactif ou sans « Status: active » ; activez-le : sudo ufw enable";
+}
+
+/**
+ * Message d’aide lorsque ni firewalld ni UFW n’est actif : détection des binaires présents sur le PATH système.
+ */
+export async function obtenirMessageDiagnosticAucunBackendPareFeuActif(): Promise<string> {
+  const cheminFw = await cheminAbsoluCommandeOuVide("firewall-cmd");
+  if (cheminFw.length > 0) {
+    return "firewalld est installé mais inactif. Démarrez-le : sudo systemctl start firewalld";
   }
-  return "Aucun pare-feu géré détecté (firewalld / UFW actifs). Installez et activez l’un des deux, ou définissez CONTAINER_ENGINE_PAREFEU_BACKEND=none pour ignorer l’ouverture automatique des ports.";
+  const cheminUfw = await cheminAbsoluCommandeOuVide("ufw");
+  if (cheminUfw.length > 0) {
+    return "UFW est installé mais inactif. Activez-le : sudo ufw enable";
+  }
+  return (
+    "Ni firewalld ni UFW trouvé sur le PATH. Installez et activez l’un des deux, ou définissez " +
+    "CONTAINER_ENGINE_PAREFEU_BACKEND=none pour désactiver la gestion automatique des ports."
+  );
 }
